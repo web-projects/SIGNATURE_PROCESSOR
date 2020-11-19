@@ -10,11 +10,11 @@ namespace SignatureProcessor.Processor
     {
         private List<SignatureObject> signaturePoints;
 
-        public void LoadJson(string filename)
+        public void LoadJsonFromResource(string resourceName)
         {
             var assembly = Assembly.GetExecutingAssembly();
             string[] resources = assembly.GetManifestResourceNames();
-            Stream stream = assembly.GetManifestResourceStream(filename);
+            Stream stream = assembly.GetManifestResourceStream(resourceName);
 
             using (StreamReader r = new StreamReader(stream))
             {
@@ -23,12 +23,32 @@ namespace SignatureProcessor.Processor
             }
         }
 
-        public PointCollection GetSignaturePoints()
+        public void LoadJsonFromStream(Stream stream)
         {
-            PointCollection points = new PointCollection();
+            using (StreamReader r = new StreamReader(stream))
+            {
+                string json = r.ReadToEnd();
+                signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
+            }
+        }
+
+        public List<PointCollection> GetSignaturePoints()
+        {
+            List<PointCollection> points = new List<PointCollection>();
+            PointCollection collection = new PointCollection();
             foreach (var point in signaturePoints)
             {
-                points.Add(new System.Windows.Point(point.x, point.y));
+                // identify stroke separator
+                if (point.x == -1 && point.x == -1)
+                {
+                    points.Add(collection);
+                    collection = new PointCollection();
+                    continue;
+                }
+                else
+                {
+                    collection.Add(new System.Windows.Point(point.x, point.y));
+                }
             }
             return points;
         }

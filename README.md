@@ -31,4 +31,4 @@ This an application for WPF Signature Testing.
 ### HISTORY ###
 
 * 20201118 - Initial repository
-       
+* 20201118 - Added dynamic signature file loading

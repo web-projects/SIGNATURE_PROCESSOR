@@ -19,6 +19,13 @@
                 <Image x:Name="SignatureImage" Source="Assets/Background.jpg"></Image>
             </Border-->
         </Canvas>
-        <Button Grid.Row="2" Content="Save" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="Button_Click"/>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Open" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="OpneFile_Click"/>
+            <Button Grid.Column="1" Content="Save" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="SaveImage_Click"/>
+        </Grid>
     </Grid>
 </Window>
