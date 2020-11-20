@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -38,16 +41,16 @@ namespace SignatureProcessor.Processor
             }
         }
 
-        public static void DrawLinesPointFromStream(MainWindow window, Stream signatureFile)
+        [STAThread]
+        public static Collection<Polyline> DrawLinesPointFromStream(Stream signatureFile)
         {
-            window.SignatureCapture.Children.Clear();
-
             // Process signature payload
             SignatureLoader signatureLoader = new SignatureLoader();
             signatureLoader.LoadJsonFromStream(signatureFile);
 
             int index = 0;
             List<PointCollection> pointCollection = signatureLoader.GetSignaturePoints();
+            Collection< Polyline> children = new Collection<Polyline>();
 
             foreach (var points in pointCollection)
             {
@@ -66,8 +69,10 @@ namespace SignatureProcessor.Processor
                 {
                     line.Points.Add(point);
                 }
-                window.SignatureCapture.Children.Add(line);
+                children.Add(line);
             }
+
+            return children;
         }
     }
 }

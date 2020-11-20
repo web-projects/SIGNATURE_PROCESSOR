@@ -32,3 +32,4 @@ This an application for WPF Signature Testing.
 
 * 20201118 - Initial repository
 * 20201118 - Added dynamic signature file loading
+* 20201119 - Added device implementation

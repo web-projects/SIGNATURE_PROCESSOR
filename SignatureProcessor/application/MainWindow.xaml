@@ -24,7 +24,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Open" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="OpneFile_Click"/>
+            <!-- Button Grid.Column="0" Content="Open" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="OpenFile_Click"/-->
+            <Button Grid.Column="0" Content="Run" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="GetSignature_Click"/>
             <Button Grid.Column="1" Content="Save" HorizontalAlignment="Center" Height="40" Margin="0,60,0,50" VerticalAlignment="Center" Width="85" Click="SaveImage_Click"/>
         </Grid>
     </Grid>
