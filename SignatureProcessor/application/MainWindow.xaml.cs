@@ -3,8 +3,8 @@ using SignatureProcessor.application.DAL;
 using SignatureProcessor.Processor;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Animation;
@@ -28,12 +28,12 @@ namespace SignatureProcessor
 
         private void LoadSignatureImage()
         {
-            SignatureEngine.DrawLinesPointFromResource(this, SignatureResource);
+            SignatureEngine.SetLinesPointFromResource(this, SignatureResource);
         }
 
         private Collection<Polyline> LoadSignatureImage(Stream fileContents)
         {
-            return SignatureEngine.DrawLinesPointFromStream(fileContents);
+            return SignatureEngine.SetLinesPointFromStream(fileContents);
         }
 
         private void OpenFile_Click(object sender, RoutedEventArgs e)
@@ -71,65 +71,53 @@ namespace SignatureProcessor
             blinkStoryboard.Children.Add(blinkAnimation);
         }
 
-        private void GetSignature_Click(object sender, RoutedEventArgs e)
+        private async void GetSignature_Click(object sender, RoutedEventArgs e)
         {
             SignatureCapture.Children.Clear();
 
-            this.Dispatcher.Invoke((Action)(() =>
+            // Start Blinking
+            SignatureCapture.Dispatcher.Invoke((Action)(() =>
             {
-                SignatureCapture.InvalidateVisual();
-                // Start Blinking
+                InvalidateVisual();
                 blinkStoryboard.Begin();
             }));
 
-            this.Dispatcher.Invoke(delegate
+            DeviceProcessor deviceProcessor = new DeviceProcessor();
+
+            // setup task
+            Task task = Task.Run(() =>
             {
-                DeviceProcessor deviceProcessor = new DeviceProcessor();
                 MemoryStream jsonPayload = deviceProcessor.GetCardholderSignature();
+
                 if (jsonPayload.Length > 0)
                 {
-                    Collection<Polyline> collection = LoadSignatureImage(jsonPayload);
-                    foreach (var child in collection)
+                    SignatureCapture.Dispatcher.Invoke(() =>
                     {
-                        SignatureCapture.Children.Add(child);
-                    }
-                }
-                deviceProcessor.Dispose();
+                        Debug.WriteLine("COLLECTING POINTS...");
+                        Collection<Polyline> collection = LoadSignatureImage(jsonPayload);
+                        
+                        foreach (var child in collection)
+                        {
+                            SignatureCapture.Children.Add(child);
+                        }
 
-                // Stop blinking
-                blinkStoryboard.Stop();
+                        Debug.WriteLine("COLLECTING POINTS...DONE!");
+                    });
+                }
             });
 
-            // create a thread  
-            //Thread newWindowThread = new Thread(new ThreadStart(() =>
-            //{
-            //    DeviceProcessor deviceProcessor = new DeviceProcessor();
-            //    MemoryStream jsonPayload = deviceProcessor.GetCardholderSignature();
-            //    if (jsonPayload.Length > 0)
-            //    {
-            //        Collection<Polyline> collection = LoadSignatureImage(jsonPayload);
-            //        foreach (var child in collection)
-            //        {
-            //            this.Dispatcher.Invoke((Action)(() =>
-            //            {
-            //                SignatureCapture.Children.Add(child);
-            //            }));
-            //        }
-            //    }
-            //    deviceProcessor.Dispose();
-
-            //    // start the Dispatcher processing  
-            //    System.Windows.Threading.Dispatcher.Run();
-            //}));
-
-            //// set the apartment state  
-            //newWindowThread.SetApartmentState(ApartmentState.STA);
-
-            //// make the thread a background thread  
-            //newWindowThread.IsBackground = true;
-
-            //// start the thread  
-            //newWindowThread.Start();
+            // clean up task
+            await task.ContinueWith(async (t1) =>
+            {
+                // Release device and stop blinking
+                await Task.Run(() =>
+                {
+                    Debug.WriteLine("DISPOSING...");
+                    deviceProcessor?.Dispose();
+                    blinkStoryboard.Stop();
+                    Debug.WriteLine("DISPOSING...DONE!");
+                });
+            });
         }
     }
 }

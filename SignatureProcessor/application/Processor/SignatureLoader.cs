@@ -36,18 +36,21 @@ namespace SignatureProcessor.Processor
         {
             List<PointCollection> points = new List<PointCollection>();
             PointCollection collection = new PointCollection();
-            foreach (var point in signaturePoints)
+            if (signaturePoints != null)
             {
-                // identify stroke separator
-                if (point.x == -1 && point.x == -1)
+                foreach (var point in signaturePoints)
                 {
-                    points.Add(collection);
-                    collection = new PointCollection();
-                    continue;
-                }
-                else
-                {
-                    collection.Add(new System.Windows.Point(point.x, point.y));
+                    // identify stroke separator
+                    if (point.x == -1 && point.x == -1)
+                    {
+                        points.Add(collection);
+                        collection = new PointCollection();
+                        continue;
+                    }
+                    else
+                    {
+                        collection.Add(new System.Windows.Point(point.x, point.y));
+                    }
                 }
             }
             return points;

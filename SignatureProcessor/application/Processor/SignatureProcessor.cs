@@ -20,7 +20,7 @@ namespace SignatureProcessor.Processor
             { Brushes.Yellow }
         };
 
-        public static void DrawLinesPointFromResource(MainWindow window, string signatureFile)
+        public static void SetLinesPointFromResource(MainWindow window, string signatureFile)
         {
             // Process signature payload
             SignatureLoader signatureLoader = new SignatureLoader();
@@ -41,8 +41,7 @@ namespace SignatureProcessor.Processor
             }
         }
 
-        [STAThread]
-        public static Collection<Polyline> DrawLinesPointFromStream(Stream signatureFile)
+        public static Collection<Polyline> SetLinesPointFromStream(Stream signatureFile)
         {
             // Process signature payload
             SignatureLoader signatureLoader = new SignatureLoader();

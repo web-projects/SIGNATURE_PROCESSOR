@@ -32,8 +32,6 @@ namespace SignatureProcessor.application.DAL
             {
                 ArrayPool<byte>.Shared.Return(array, true);
             }
-
-            System.GC.SuppressFinalize(this);
         }
 
         public MemoryStream GetCardholderSignature()
