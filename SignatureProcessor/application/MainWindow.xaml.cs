@@ -5,6 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Animation;
@@ -17,13 +18,20 @@ namespace SignatureProcessor
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static readonly string SignatureFilename = "Signature.png";
         private static readonly string SignatureResource = "SignatureProcessor.Assets.Signature.json";
         private Storyboard blinkStoryboard;
 
         public MainWindow()
         {
             InitializeComponent();
+            InitializeLayout();
+        }
+
+        private void InitializeLayout()
+        {
             SetBlinkingAnimation();
+            btnShow.IsEnabled = File.Exists(SignatureFilename);
         }
 
         private void LoadSignatureImage()
@@ -46,11 +54,6 @@ namespace SignatureProcessor
                 Stream fileContents = File.OpenRead(openFileDialog.FileName);
                 LoadSignatureImage(fileContents);
             }
-        }
-
-        private void SaveImage_Click(object sender, RoutedEventArgs e)
-        {
-            ImageRenderer.RenderToPNGFile(SignatureCapture, "signature.png");
         }
 
         private void SetBlinkingAnimation()
@@ -79,6 +82,8 @@ namespace SignatureProcessor
             SignatureCapture.Dispatcher.Invoke((Action)(() =>
             {
                 InvalidateVisual();
+                btnRun.IsEnabled = false;
+                btnShow.IsEnabled = false;
                 blinkStoryboard.Begin();
             }));
 
@@ -95,7 +100,7 @@ namespace SignatureProcessor
                     {
                         Debug.WriteLine("COLLECTING POINTS...");
                         Collection<Polyline> collection = LoadSignatureImage(jsonPayload);
-                        
+
                         foreach (var child in collection)
                         {
                             SignatureCapture.Children.Add(child);
@@ -116,8 +121,60 @@ namespace SignatureProcessor
                     deviceProcessor?.Dispose();
                     blinkStoryboard.Stop();
                     Debug.WriteLine("DISPOSING...DONE!");
+
+                    SignatureCapture.Dispatcher.Invoke((Action)(() =>
+                    {
+                        btnRun.IsEnabled = true;
+                        if (File.Exists(SignatureFilename))
+                        {
+                            btnShow.IsEnabled = true;
+                            btnShow.Content = "Save";
+                        }
+                    }));
                 });
             });
+        }
+
+        private void ShowImage_Click(object sender, RoutedEventArgs e)
+        {
+            // Check for Button mode
+            if (btnShow.Content.Equals("Show"))
+            { 
+                //if (ImageRenderer.RenderToPNGFile(SignatureCapture, SignatureFilename))
+                //{
+                //    Microsoft.Win32.OpenFileDialog openFileDialong1 = new Microsoft.Win32.OpenFileDialog();
+                //    openFileDialong1.Filter = "Image files (.png)|*.png";
+                //    openFileDialong1.Title = "Open an Image File";
+                //    openFileDialong1.ShowDialog();
+
+                //    string fileName = openFileDialong1.FileName;
+
+                //    if (!string.IsNullOrEmpty(fileName))
+                //    {
+                //        ShowImageWindow window = new ShowImageWindow();
+                //        if (window.ShowImageFromFile(fileName))
+                //        { 
+                //            window.Show();
+                //        }
+                //    }
+                //}
+
+                string filePath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                string fileName = System.IO.Path.Combine(filePath, SignatureFilename);
+                ShowImageWindow window = new ShowImageWindow();
+                if (window.ShowImageFromFile(fileName))
+                {
+                    window.Show();
+                }
+            }
+            else
+            {
+                // Save to file
+                ImageRenderer.RenderToPNGFile(SignatureCapture, SignatureFilename);
+
+                btnShow.Content = "Show";
+                btnShow.IsEnabled = File.Exists(SignatureFilename);
+            }
         }
     }
 }

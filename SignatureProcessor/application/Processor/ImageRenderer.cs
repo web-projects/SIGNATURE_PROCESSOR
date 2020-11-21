@@ -33,7 +33,7 @@ namespace SignatureProcessor.Processor
             return result;
         }
 
-        public static void RenderToPNGFile(Visual targetControl, string filename)
+        public static bool RenderToPNGFile(Visual targetControl, string filename)
         {
             var renderTargetBitmap = GetRenderTargetBitmapFromControl(targetControl);
 
@@ -47,11 +47,13 @@ namespace SignatureProcessor.Processor
                 using (var fileStream = new FileStream(filename, FileMode.Create))
                 {
                     encoder.Save(fileStream);
+                    return true;
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"There was an error saving the file: {ex.Message}");
+                return false;
             }
         }
 
