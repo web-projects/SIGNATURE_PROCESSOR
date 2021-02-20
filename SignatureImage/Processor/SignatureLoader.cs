@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Media;
 
-namespace SignatureProcessor.Processor
+namespace SignatureImage.Processor
 {
     public class SignatureLoader
     {
@@ -16,13 +16,10 @@ namespace SignatureProcessor.Processor
             string[] resources = assembly.GetManifestResourceNames();
             Stream stream = assembly.GetManifestResourceStream(resourceName);
 
-            if (stream != null)
+            using (StreamReader r = new StreamReader(stream))
             {
-                using (StreamReader r = new StreamReader(stream))
-                {
-                    string json = r.ReadToEnd();
-                    signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
-                }
+                string json = r.ReadToEnd();
+                signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
             }
         }
 

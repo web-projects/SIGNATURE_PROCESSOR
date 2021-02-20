@@ -34,3 +34,4 @@ This an application for WPF Signature Testing.
 * 20201118 - Added dynamic signature file loading
 * 20201119 - Added device implementation
 * 20201120 - Automated signature collection
+* 20210219 - Fixed default json processing

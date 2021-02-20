@@ -1,8 +1,7 @@
-﻿using System;
+﻿using SignatureImage.Processor;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -20,7 +19,7 @@ namespace SignatureProcessor.Processor
             { Brushes.Yellow }
         };
 
-        public static void SetLinesPointFromResource(MainWindow window, string signatureFile)
+        /*public static void SetLinesPointFromResource(MainWindow window, string signatureFile)
         {
             // Process signature payload
             SignatureLoader signatureLoader = new SignatureLoader();
@@ -39,7 +38,7 @@ namespace SignatureProcessor.Processor
                 }
                 window.SignatureCapture.Children.Add(line);
             }
-        }
+        }*/
 
         public static Collection<Polyline> SetLinesPointFromStream(Stream signatureFile)
         {

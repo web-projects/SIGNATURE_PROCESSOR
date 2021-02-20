@@ -19,8 +19,10 @@ namespace SignatureProcessor
     public partial class MainWindow : Window
     {
         private static readonly string SignatureFilename = "Signature.png";
-        private static readonly string SignatureResource = "SignatureProcessor.Assets.Signature.json";
+        private static readonly string SignatureResource = "SignatureProcessor.application.Assets.Signature.json";
         private Storyboard blinkStoryboard;
+
+        private const bool LOAD_FROM_RESOURCE = true;
 
         public MainWindow()
         {
@@ -34,7 +36,7 @@ namespace SignatureProcessor
             btnShow.IsEnabled = File.Exists(SignatureFilename);
         }
 
-        private void LoadSignatureImage()
+        private void LoadSignatureImageFromResource()
         {
             SignatureEngine.SetLinesPointFromResource(this, SignatureResource);
         }
@@ -46,13 +48,20 @@ namespace SignatureProcessor
 
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Json files (*.json)|*.json";
-
-            if (openFileDialog.ShowDialog() == true)
+            if (LOAD_FROM_RESOURCE)
             {
-                Stream fileContents = File.OpenRead(openFileDialog.FileName);
-                LoadSignatureImage(fileContents);
+                LoadSignatureImageFromResource();
+            }
+            else
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Filter = "Json files (*.json)|*.json";
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    Stream fileContents = File.OpenRead(openFileDialog.FileName);
+                    LoadSignatureImage(fileContents);
+                }
             }
         }
 
