@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -9,6 +11,29 @@ namespace SignatureProcessor.Processor
     public static class ImageRenderer
     {
         private const double defaultDpi = 96.0;
+
+        public static Bitmap CreateBitmapFromPoints(List<PointCollection> pointCollection)
+        {
+            Bitmap signatureBmp = new Bitmap(400, 300);
+            Graphics flagGraphics = Graphics.FromImage(signatureBmp);
+
+            // Create pen.
+            System.Drawing.Pen redPen = new System.Drawing.Pen(System.Drawing.Color.Red, 1);
+
+            foreach (var points in pointCollection)
+            {
+                PointF[] signaturePoints = new PointF[points.Count];
+                int index = 0;
+                foreach (System.Windows.Point point in points)
+                {
+                    object value = new PointF((float)point.X, (float)point.Y);
+                    signaturePoints.SetValue(value, index ++);
+                }
+                flagGraphics.DrawPolygon(redPen, signaturePoints);
+            }
+
+            return signatureBmp;
+        }
 
         public static ImageSource RenderToPNGImageSource(Visual targetControl)
         {
@@ -35,9 +60,9 @@ namespace SignatureProcessor.Processor
 
         public static bool RenderToPNGFile(Visual targetControl, string filename)
         {
-            var renderTargetBitmap = GetRenderTargetBitmapFromControl(targetControl);
+            BitmapSource renderTargetBitmap = GetRenderTargetBitmapFromControl(targetControl);
 
-            var encoder = new PngBitmapEncoder();
+            PngBitmapEncoder encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
             var result = new BitmapImage();
@@ -64,20 +89,20 @@ namespace SignatureProcessor.Processor
                 return null;
             }
 
-            var bounds = VisualTreeHelper.GetDescendantBounds(targetControl);
+            Rect bounds = VisualTreeHelper.GetDescendantBounds(targetControl);
 
-            var renderTargetBitmap = new RenderTargetBitmap((int)(bounds.Width * dpi / 96.0),
-                                                            (int)(bounds.Height * dpi / 96.0),
-                                                            dpi,
-                                                            dpi,
-                                                            PixelFormats.Pbgra32);
+            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)(bounds.Width * dpi / 96.0),
+                                                                           (int)(bounds.Height * dpi / 96.0),
+                                                                           dpi,
+                                                                           dpi,
+                                                                           PixelFormats.Pbgra32);
 
-            var drawingVisual = new DrawingVisual();
+            DrawingVisual drawingVisual = new DrawingVisual();
 
-            using (var drawingContext = drawingVisual.RenderOpen())
+            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
             {
-                var visualBrush = new VisualBrush(targetControl);
-                drawingContext.DrawRectangle(visualBrush, null, new Rect(new Point(), bounds.Size));
+                VisualBrush visualBrush = new VisualBrush(targetControl);
+                drawingContext.DrawRectangle(visualBrush, null, new Rect(new System.Windows.Point(), bounds.Size));
             }
 
             renderTargetBitmap.Render(drawingVisual);

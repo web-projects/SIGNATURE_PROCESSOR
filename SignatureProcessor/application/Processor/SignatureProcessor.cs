@@ -20,7 +20,7 @@ namespace SignatureProcessor.Processor
             { Brushes.Yellow }
         };
 
-        public static void SetLinesPointFromResource(MainWindow window, string signatureFile)
+        public static List<PointCollection> SetLinesPointFromResource(MainWindow window, string signatureFile)
         {
             // Process signature payload
             SignatureLoader signatureLoader = new SignatureLoader();
@@ -31,14 +31,20 @@ namespace SignatureProcessor.Processor
             Polyline line = new Polyline();
             line.Stroke = Brushes.Red;
             line.StrokeThickness = 1;
+
             foreach (var points in pointCollection)
             {
                 foreach (var point in points)
-                { 
-                    line.Points.Add(point);
+                {
+                    if (point.X != -1 && point.Y != -1)
+                    {
+                        line.Points.Add(point);
+                    }
                 }
                 window.SignatureCapture.Children.Add(line);
             }
+
+            return pointCollection;
         }
 
         public static Collection<Polyline> SetLinesPointFromStream(Stream signatureFile)

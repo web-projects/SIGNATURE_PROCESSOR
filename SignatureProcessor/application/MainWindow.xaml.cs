@@ -2,12 +2,16 @@
 using SignatureProcessor.application.DAL;
 using SignatureProcessor.Processor;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 
@@ -38,7 +42,14 @@ namespace SignatureProcessor
 
         private void LoadSignatureImageFromResource()
         {
-            SignatureEngine.SetLinesPointFromResource(this, SignatureResource);
+            List<PointCollection> pointCollection = SignatureEngine.SetLinesPointFromResource(this, SignatureResource);
+
+            Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
+            
+            string filePath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            string fileName = System.IO.Path.Combine(filePath, SignatureFilename);
+
+            signatureBmp.Save(fileName, ImageFormat.Png);
         }
 
         private Collection<Polyline> LoadSignatureImage(Stream fileContents)
