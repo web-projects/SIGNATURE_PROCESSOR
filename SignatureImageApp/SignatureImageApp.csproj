@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,9 +19,5 @@
   <ItemGroup>
     <ProjectReference Include="..\SignatureProcessor\SignatureProcessor.csproj" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="%25WINDIR%25\System32\XCOPY /y /i &quot;$(SolutionDir)SignatureProcessor\bin\$(ConfigurationName)\netstandard2.1\SignatureProcessor.dll&quot; &quot;$(TargetDir)netstandard2.1\&quot;" />
-  </Target>
 
 </Project>

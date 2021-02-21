@@ -3,24 +3,50 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureProcessor", "SignatureProcessor\SignatureProcessor.csproj", "{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureProcessorApp", "SignatureProcessorApp\SignatureProcessorApp.csproj", "{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignatureImage", "SignatureImage\SignatureImage.csproj", "{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureImage", "SignatureImage\SignatureImage.csproj", "{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureProcessor", "SignatureProcessor\SignatureProcessor.csproj", "{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignatureImageApp", "SignatureImageApp\SignatureImageApp.csproj", "{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0189B918-2D55-40AF-BED9-2F4DDB73E1F6}.Release|x86.ActiveCfg = Release|Any CPU
 		{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}.Release|x86.ActiveCfg = Release|Any CPU
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Debug|x86.ActiveCfg = Debug|x86
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Debug|x86.Build.0 = Debug|x86
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Release|x86.ActiveCfg = Release|x86
+		{857F0E0B-5EF0-4AB8-A068-2D5C7AAD51D6}.Release|x86.Build.0 = Release|x86
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Debug|x86.ActiveCfg = Debug|x86
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Debug|x86.Build.0 = Debug|x86
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Release|x86.ActiveCfg = Release|x86
+		{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

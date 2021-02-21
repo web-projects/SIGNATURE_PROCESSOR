@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Media;
 
-namespace SignatureImage.Processor
+namespace SignatureProcessor.Processor
 {
     public class SignatureLoader
     {

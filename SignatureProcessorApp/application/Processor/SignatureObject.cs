@@ -1,4 +1,4 @@
-﻿namespace SignatureImage.Processor
+﻿namespace SignatureProcessor.Processor
 {
     /// <summary>
     /// The coordinates are relative to screen coordinate space. For example, if you draw
