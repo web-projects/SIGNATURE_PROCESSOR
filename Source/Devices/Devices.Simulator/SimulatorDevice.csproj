@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ninject" Version="3.3.4" />
+    <PackageReference Include="System.Composition" Version="1.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\xo\XO.csproj" />
+    <ProjectReference Include="..\Devices.Common\Devices.Common.csproj" />
+  </ItemGroup>
+
+</Project>

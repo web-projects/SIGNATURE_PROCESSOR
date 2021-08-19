@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="State\**" />
+    <EmbeddedResource Remove="State\**" />
+    <None Remove="State\**" />
+  </ItemGroup>
+
+ <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="3.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Ninject" Version="3.3.4" />
+  </ItemGroup>
+
+ <ItemGroup>
+   <ProjectReference Include="..\..\Devices\Devices.Common\Devices.Common.csproj" />
+ </ItemGroup>
+
+</Project>

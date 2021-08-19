@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\Background.jpg" />
+    <None Remove="Assets\Signature.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Signature.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="5.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
+    <PackageReference Include="WindowsBase" Version="4.6.1055" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Devices\Devices.Common\Devices.Common.csproj" />
+    <ProjectReference Include="..\..\Devices\Devices.Verifone\Devices.Verifone.csproj" />
+  </ItemGroup>
+
+</Project>

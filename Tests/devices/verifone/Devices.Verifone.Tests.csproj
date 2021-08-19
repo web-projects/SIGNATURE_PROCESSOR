@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Source\Devices\Devices.Verifone\Devices.Verifone.csproj" />
+    <ProjectReference Include="..\..\common\TestHelper\TestHelper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
+</Project>

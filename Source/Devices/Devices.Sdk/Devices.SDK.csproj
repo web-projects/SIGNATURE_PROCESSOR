@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Composition" Version="1.0.31" />
+    <PackageReference Include="Ninject" Version="3.3.4" />
+    <PackageReference Include="System.Composition" Version="1.4.0" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="1.4.0" />
+    <PackageReference Include="System.Composition.TypedParts" Version="1.4.0" />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Devices.Common\Devices.Common.csproj" />
+  </ItemGroup>
+
+</Project>
