@@ -3,31 +3,31 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureImage", "SignatureImage\SignatureImage.csproj", "{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureImage", "Launcher\SignatureImage\SignatureImage.csproj", "{BCEFC672-A8C2-4320-A56A-680E4E6BB38E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureImageApp", "SignatureImageApp\SignatureImageApp.csproj", "{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureImageApp", "Launcher\SignatureImageApp\SignatureImageApp.csproj", "{AFF021BA-F670-4A0E-A162-2D08B0BDC3F3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{358354B4-5141-43F3-A653-00A331DF26AE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{86EB217E-CB42-405E-8DB0-4BC991B3E5CD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SignatureProcessorTests", "SignatureProcessorTests", "{1223DA57-5DA1-423E-B9A2-A829E2960688}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SignatureProcessorTests", "Launcher\SignatureProcessorTests", "{1223DA57-5DA1-423E-B9A2-A829E2960688}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureProcessorTests", "..\Tests\SignatureProcessorTests\SignatureProcessorTests.csproj", "{D7F997DE-C3BD-4474-B031-40A944F583CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignatureProcessorTests", "Tests\SignatureProcessorTests\SignatureProcessorTests.csproj", "{D7F997DE-C3BD-4474-B031-40A944F583CA}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devices", "devices", "{77CEDA75-36CE-4DD5-83E7-17491BCE1A3E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devices", "Devices", "{77CEDA75-36CE-4DD5-83E7-17491BCE1A3E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Verifone", "Verifone", "{0D206FCB-146D-40E6-AD7A-D767B85B7AC3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devices", "devices", "{5E026000-C958-4527-BD39-CE7DBA51C103}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devices", "Devices", "{5E026000-C958-4527-BD39-CE7DBA51C103}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Verifone", "Verifone", "{80A074E3-732C-4605-9691-A868E539913C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{955AF4EB-29A2-4763-BD24-CC044C62BBDB}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sdk", "Sdk", "{27E95F87-4F11-4F5B-A0F8-0804921CA449}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sdk", "Devices\Devices.Sdk", "{27E95F87-4F11-4F5B-A0F8-0804921CA449}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Simulator", "Simulator", "{A5440B30-FA52-433A-AFAC-0B716DEAC45B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Simulator", "Devices\Devices.Simulator", "{A5440B30-FA52-433A-AFAC-0B716DEAC45B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Devices.Common", "Devices\Devices.Common\Devices.Common.csproj", "{9D19D258-6436-491E-B819-B2F3E41C7241}"
 EndProject
@@ -72,6 +72,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestHelper", "TestHelper", "{54169BFE-B72A-4DAC-8DF6-8D8E5AE2ED48}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestHelper", "..\Tests\common\TestHelper\TestHelper.csproj", "{E169F442-83ED-4971-9F23-E9BADCB19F11}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Devices.SignatureProcessor", "Devices\Devices.SignatureProcessor\Devices.SignatureProcessor.csproj", "{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -255,6 +257,18 @@ Global
 		{E169F442-83ED-4971-9F23-E9BADCB19F11}.Release|x64.Build.0 = Release|Any CPU
 		{E169F442-83ED-4971-9F23-E9BADCB19F11}.Release|x86.ActiveCfg = Release|Any CPU
 		{E169F442-83ED-4971-9F23-E9BADCB19F11}.Release|x86.Build.0 = Release|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Debug|x64.Build.0 = Debug|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Debug|x86.Build.0 = Debug|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Release|x64.ActiveCfg = Release|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Release|x64.Build.0 = Release|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Release|x86.ActiveCfg = Release|Any CPU
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -293,6 +307,7 @@ Global
 		{0EAA711A-E028-4618-8407-777F9DA00544} = {86EB217E-CB42-405E-8DB0-4BC991B3E5CD}
 		{54169BFE-B72A-4DAC-8DF6-8D8E5AE2ED48} = {0EAA711A-E028-4618-8407-777F9DA00544}
 		{E169F442-83ED-4971-9F23-E9BADCB19F11} = {54169BFE-B72A-4DAC-8DF6-8D8E5AE2ED48}
+		{B266FFB1-8974-4D4B-A3FD-83D5BB0BB5A3} = {955AF4EB-29A2-4763-BD24-CC044C62BBDB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {13D12A1F-35F9-4E6C-BFD1-817849950790}

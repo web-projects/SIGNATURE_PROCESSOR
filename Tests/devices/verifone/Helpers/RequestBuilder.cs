@@ -3,6 +3,8 @@ using XO.Requests;
 using XO.Requests.DAL;
 using System;
 using System.Collections.Generic;
+using XO.Responses.DAL;
+using XO.Private;
 
 namespace Devices.Verifone.Tests.Helpers
 {

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Composition;
 using System.Linq;
+using System.Threading;
 using XO.Requests;
 using XO.Responses;
 
@@ -173,7 +174,7 @@ namespace Devices.Verifone
             throw new NotImplementedException();
         }
 
-        public (HTMLResponseObject htmlResponseObject, int VipaResponse) GetSignature()
+        public (HTMLResponseObject htmlResponseObject, int VipaResponse) GetSignature(LinkRequest linkRequest, CancellationToken cancellationToken)
         {
             Console.WriteLine($"DEVICE[{DeviceInformation.ComPort}]: GET SIGNATURE.");
             if (vipaDevice != null)

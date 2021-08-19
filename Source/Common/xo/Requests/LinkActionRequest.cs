@@ -1,12 +1,15 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using XO.Requests.DAL;
+using XO.Requests.Payment;
 
 namespace XO.Requests
 {
     public class LinkActionRequest
     {
         public string MessageID { get; set; }
+
+        public LinkPaymentRequest PaymentRequest { get; set; }
 
         public int Timeout { get; set; }
 
@@ -15,6 +18,8 @@ namespace XO.Requests
         public LinkDeviceRequest DeviceRequest { get; set; }
         
         public LinkDeviceActionRequest DeviceActionRequest { get; set; }
+
+        public LinkDALActionRequest DALActionRequest { get; set; }
 
         public LinkDALRequest DALRequest { get; set; }
     }

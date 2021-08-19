@@ -12,8 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\common\xo\IPA5.XO.ProtoBuf\IPA5.XO.ProtoBuf.csproj" />
-    <ProjectReference Include="..\..\src\common\xo\IPA5.XO\IPA5.XO.csproj" />
+    <ProjectReference Include="..\..\..\Source\Common\xo\XO.csproj" />
   </ItemGroup>
 
 </Project>

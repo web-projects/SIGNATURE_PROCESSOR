@@ -1,14 +1,16 @@
-using System;
-using Xunit;
-using Devices.Verifone;
 using Devices.Common;
-using SignatureProcessorApp.devices.common;
-using System.Linq;
-using TestHelper;
-using Devices.Verifone.VIPA;
-using System.Threading;
-using XO.Requests;
+using Devices.Common.SignatureProcessor;
 using Devices.Verifone.Tests.Helpers;
+using Devices.Verifone.VIPA;
+using SignatureProcessorApp.devices.common;
+using SignatureProcessorApp.devices.Verifone.Helpers;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using TestHelper;
+using XO.Requests;
+using Xunit;
 
 namespace Devices.Verifone.Tests
 {
@@ -20,6 +22,8 @@ namespace Devices.Verifone.Tests
         private readonly DeviceInformation currentDeviceInformation;
 
         private readonly VerifoneDevice subject;
+
+        private CancellationTokenSource cancelTokenSource;
 
         public VerifoneDeviceTests()
         {
@@ -58,7 +62,23 @@ namespace Devices.Verifone.Tests
 
         public void Dispose()
         {
-           
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                //subject.vipaDevice?.Disconnect();
+
+                if (cancelTokenSource != null)
+                {
+                    cancelTokenSource.Dispose();
+                    cancelTokenSource = null;
+                }
+                subject.Dispose();
+            }
         }
 
         [Fact]
@@ -73,10 +93,11 @@ namespace Devices.Verifone.Tests
 
             LinkRequest linkRequest = RequestBuilder.LinkGetSignatureRequest();
 
-            LinkRequest linkRequestResponse = subject.GetSignature(linkRequest, It.IsAny<CancellationToken>());
+            //LinkRequest linkRequestResponse = subject.GetSignature(linkRequest, CancellationToken.None);
+            (HTMLResponseObject htmlResponseObject, int VipaResponse) = subject.GetSignature(linkRequest, CancellationToken.None);
 
-            Assert.Null(linkRequestResponse.LinkObjects.LinkActionResponseList[0].Errors);
-            Assert.Equal(1, linkRequestResponse.LinkObjects.LinkActionResponseList[0].DALResponse.Devices?.Count);
+            //Assert.Null(linkRequestResponse.LinkObjects.LinkActionResponseList[0].Errors);
+            //Assert.Equal(1, linkRequestResponse.LinkObjects.LinkActionResponseList[0].DALResponse.Devices?.Count);
             Assert.NotNull(linkRequest.Actions[0].DALRequest.LinkObjects.ESignatureImage);
 
             subject.DeviceSetIdle();
