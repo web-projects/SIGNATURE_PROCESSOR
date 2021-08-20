@@ -108,7 +108,7 @@ namespace Devices.Verifone.Tests
             // Convert to image and output to "C:\Temp\Signature.json"
             //using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
             //{
-            //    file.Write(linkActionRequestIPA5Object.SignatureData[offset], 0, linkActionRequestIPA5Object.SignatureData[offset].Length);
+            //    file.Write(signatureImagePayload, 0, signatureImagePayload.Length);
             //}
 
             // Convert to image and output to "C:\Temp\Signature.png"

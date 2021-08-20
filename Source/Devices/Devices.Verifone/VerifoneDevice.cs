@@ -199,6 +199,14 @@ namespace Devices.Verifone
 
                 request.Actions[0].DALRequest.LinkObjects.ESignatureImage = signatureImagePayload;
                 request.Actions[0].DALRequest.LinkObjects.MaxBytes = signatureImagePayload.Length;
+
+                // note: paste the below code into VerifoneDevice::ProcessSignatureRequest method above the code that "Cleans up Memory"
+                // Convert to image and output to "C:\Temp\Signature.json"
+
+                using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                {
+                    file.Write(prunedArray, 0, prunedArray.Length);
+                }
             }
 
             return htmlResult;
