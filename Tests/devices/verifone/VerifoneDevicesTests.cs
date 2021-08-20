@@ -1,5 +1,6 @@
 using Devices.Common;
 using Devices.Common.SignatureProcessor;
+using Devices.SignatureProcessor;
 using Devices.Verifone.Tests.Helpers;
 using Devices.Verifone.VIPA;
 using SignatureProcessorApp.devices.common;
@@ -27,6 +28,8 @@ namespace Devices.Verifone.Tests
 
         public VerifoneDeviceTests()
         {
+            subject = new VerifoneDevice();
+
             deviceConfig = new DeviceConfig()
             {
                 Valid = true,
@@ -56,8 +59,6 @@ namespace Devices.Verifone.Tests
                     SerialNumber = "DEADBEEF",
                 };
             }
-
-            subject = new VerifoneDevice();
         }
 
         public void Dispose()
@@ -70,7 +71,7 @@ namespace Devices.Verifone.Tests
         {
             if (disposing)
             {
-                //subject.vipaDevice?.Disconnect();
+                //subject.VipaDevice?.Disconnect();
 
                 if (cancelTokenSource != null)
                 {
@@ -81,15 +82,16 @@ namespace Devices.Verifone.Tests
             }
         }
 
+        //[Fact(Skip = skipfact)]
         [Fact]
         public void VerifoneDevice_ShouldNotReturnNull_WhenTestingDALGetSignature()
         {
             Assert.Null(subject.Probe(deviceConfig, currentDeviceInformation, out bool active));
             Assert.True(active);
 
-            IVIPA vipaDevice = Helper.GetPropertyValueFromInstance<IVIPA>("VipaDevice", true, false, subject);
-            //vipaDevice.SupportedTransactions = deviceConfig.SupportedTransactions;
-            Helper.SetPropertyValueToInstance<IVIPA>("VipaDevice", true, false, subject, vipaDevice);
+            IVIPA VipaDevice = Helper.GetPropertyValueFromInstance<IVIPA>("VipaDevice", true, false, subject);
+            //VipaDevice.SupportedTransactions = deviceConfig.SupportedTransactions;
+            Helper.SetPropertyValueToInstance<IVIPA>("VipaDevice", true, false, subject, VipaDevice);
 
             LinkRequest linkRequest = RequestBuilder.LinkGetSignatureRequest();
 

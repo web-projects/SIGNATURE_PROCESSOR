@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\Common\config\Config.csproj" />
     <ProjectReference Include="..\..\common\xo\XO.csproj" />
     <ProjectReference Include="..\Devices.Common\Devices.Common.csproj" />
+    <ProjectReference Include="..\Devices.SignatureProcessor\Devices.SignatureProcessor.csproj" />
   </ItemGroup>
 
 </Project>

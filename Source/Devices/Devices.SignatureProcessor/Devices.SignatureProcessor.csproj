@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\common\xo\XO.csproj" />
+    <ProjectReference Include="..\Devices.Common\Devices.Common.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,9 +2,9 @@
 {
     public class VIPAResponseHandlers
     {
-        public VIPA.ResponseTagsHandlerDelegate responsetagshandler { get; set; }
-        public VIPA.ResponseTaglessHandlerDelegate responsetaglesshandler { get; set; }
+        public VIPAImpl.ResponseTagsHandlerDelegate responsetagshandler { get; set; }
+        public VIPAImpl.ResponseTaglessHandlerDelegate responsetaglesshandler { get; set; }
 
-        public VIPA.ResponseCLessHandlerDelegate responsecontactlesshandler { get; set; }
+        public VIPAImpl.ResponseCLessHandlerDelegate responsecontactlesshandler { get; set; }
     }
 }

@@ -10,5 +10,6 @@ namespace XO.Private
         public string SignatureName { get; set; }
         public List<byte[]> SignatureData { get; set; }
         public byte[] ESignatureImage { get; set; }
+        public int MaxBytes { get; set; }
     }
 }

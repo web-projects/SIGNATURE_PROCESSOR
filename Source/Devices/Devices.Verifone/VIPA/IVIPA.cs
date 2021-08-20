@@ -2,7 +2,7 @@
 using Devices.Verifone.TLV;
 using Devices.Verifone.Connection;
 using System.Collections.Generic;
-using static Devices.Verifone.VIPA.VIPA;
+using static Devices.Verifone.VIPA.VIPAImpl;
 using SignatureProcessorApp.devices.Verifone.Helpers;
 
 namespace Devices.Verifone.VIPA
@@ -22,6 +22,8 @@ namespace Devices.Verifone.VIPA
         (DeviceInfoObject deviceInfoObject, int VipaResponse) DeviceExtendedReset();
 
         (DevicePTID devicePTID, int VipaResponse) DeviceReboot();
+
+        int CloseContactlessReader(bool forceClose = false);
 
         (int VipaResult, int VipaResponse) GetActiveKeySlot();
 

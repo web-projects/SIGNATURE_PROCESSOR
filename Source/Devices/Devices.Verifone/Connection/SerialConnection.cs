@@ -42,9 +42,9 @@ namespace Devices.Verifone.Connection
         private bool lastCDHolding;
         private string commPort;
 
-        internal VIPA.VIPA.ResponseTagsHandlerDelegate ResponseTagsHandler = null;
-        internal VIPA.VIPA.ResponseTaglessHandlerDelegate ResponseTaglessHandler = null;
-        internal VIPA.VIPA.ResponseCLessHandlerDelegate ResponseContactlessHandler = null;
+        internal VIPA.VIPAImpl.ResponseTagsHandlerDelegate ResponseTagsHandler = null;
+        internal VIPA.VIPAImpl.ResponseTaglessHandlerDelegate ResponseTaglessHandler = null;
+        internal VIPA.VIPAImpl.ResponseCLessHandlerDelegate ResponseContactlessHandler = null;
 
         public SerialConnection(DeviceInformation deviceInformation)
         {
@@ -100,7 +100,7 @@ namespace Devices.Verifone.Connection
                     errorFound = true;
                     readErrorLevel = ReadErrorLevel.Invalid_PCB;
                 }
-                else if (combinedResponseBytes[2] > (combinedResponseBytes.Length - (3 + 1)))
+                else if (combinedResponseBytes[2] > (combinedResponseBytes.Length - 4))
                 {
                     errorFound = true;
                     readErrorLevel = ReadErrorLevel.Invalid_CombinedBytes;
