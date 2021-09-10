@@ -14,6 +14,9 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using Microsoft.Extensions.Configuration;
+using Common.LoggerManager;
+using System.Linq;
 
 namespace SignatureProcessorApp
 {
@@ -32,12 +35,66 @@ namespace SignatureProcessorApp
         {
             InitializeComponent();
             InitializeLayout();
+
+            // Get appsettings.json config - AddEnvironmentVariables() requires package: Microsoft.Extensions.Configuration.EnvironmentVariables
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            // logger manager
+            SetLogging(configuration);
         }
 
         private void InitializeLayout()
         {
             SetBlinkingAnimation();
             btnShow.IsEnabled = File.Exists(SignatureFilename);
+        }
+
+        private string[] GetLoggingLevels(IConfiguration configuration, int index)
+        {
+            return configuration.GetSection("LoggerManager:Logging").GetValue<string>("Levels").Split("|");
+        }
+
+        private void SetLogging(IConfiguration configuration)
+        {
+            try
+            {
+                string[] logLevels = GetLoggingLevels(configuration, 0);
+
+                if (logLevels.Length > 0)
+                {
+                    string fullName = Assembly.GetEntryAssembly().Location;
+                    string logname = System.IO.Path.GetFileNameWithoutExtension(fullName) + ".log";
+                    string path = Directory.GetCurrentDirectory();
+                    string filepath = path + "\\logs\\" + logname;
+
+                    int levels = 0;
+                    foreach (var item in logLevels)
+                    {
+                        foreach (var level in LogLevels.LogLevelsDictonary.Where(x => x.Value.Equals(item)).Select(x => x.Key))
+                        {
+                            levels += (int)level;
+                        }
+                    }
+
+                    Logger.SetFileLoggerConfiguration(filepath, levels);
+
+                    Logger.info("LOGGING INITIALIZED.");
+
+                    //Logger.info( "LOG ARG1:", "1111");
+                    //Logger.info( "LOG ARG1:{0}, ARG2:{1}", "1111", "2222");
+                    //Logger.debug("THIS IS A DEBUG STRING");
+                    //Logger.warning("THIS IS A WARNING");
+                    //Logger.error("THIS IS AN ERROR");
+                    //Logger.fatal("THIS IS FATAL");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.error("main: SetupLogging() - exception={0}", e.Message);
+            }
         }
 
         private void LoadSignatureImageFromResource()

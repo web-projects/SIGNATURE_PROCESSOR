@@ -77,16 +77,19 @@ namespace Common.LoggerManager
                 }
             }
         }
+        
         public static void debug(string message, object arg1, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1);
             debug(payload, target);
         }
+        
         public static void debug(string message, object arg1, object arg2, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2);
             debug(payload, target);
         }
+        
         public static void debug(string message, object arg1, object arg2, object arg3, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2, arg3);
@@ -146,16 +149,19 @@ namespace Common.LoggerManager
             string payload = String.Format(message, arg1);
             info(payload, target);
         }
+        
         public static void info(string message, object arg1, object arg2, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2);
             info(payload, target);
         }
+        
         public static void info(string message, object arg1, object arg2, object arg3, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2, arg3);
             info(payload, target);
         }
+        
         // WARNING LOGGING
         public static void warning(string message, LogTarget target = LogTarget.File)
         {
@@ -204,21 +210,25 @@ namespace Common.LoggerManager
                 }
             }
         }
+        
         public static void warning(string message, object arg1, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1);
             warning(payload, target);
         }
+        
         public static void warning(string message, object arg1, object arg2, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2);
             warning(payload, target);
         }
+        
         public static void warning(string message, object arg1, object arg2, object arg3, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2, arg3);
             warning(payload, target);
         }
+        
         // ERROR LOGGING
         public static void error(string message, LogTarget target = LogTarget.File)
         {
@@ -267,21 +277,25 @@ namespace Common.LoggerManager
                 }
             }
         }
+        
         public static void error(string message, object arg1, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1);
             error(payload, target);
         }
+        
         public static void error(string message, object arg1, object arg2, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2);
             error(payload, target);
         }
+        
         public static void error(string message, object arg1, object arg2, object arg3, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2, arg3);
             error(payload, target);
         }
+        
         // FATAL LOGGING
         public static void fatal(string message, LogTarget target = LogTarget.File)
         {
@@ -330,16 +344,19 @@ namespace Common.LoggerManager
                 }
             }
         }
+        
         public static void fatal(string message, object arg1, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1);
             fatal(payload, target);
         }
+        
         public static void fatal(string message, object arg1, object arg2, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2);
             fatal(payload, target);
         }
+        
         public static void fatal(string message, object arg1, object arg2, object arg3, LogTarget target = LogTarget.File)
         {
             string payload = String.Format(message, arg1, arg2, arg3);
