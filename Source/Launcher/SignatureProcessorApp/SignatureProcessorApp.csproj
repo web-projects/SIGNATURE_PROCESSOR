@@ -42,7 +42,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Devices\Devices.Sdk\Devices.SDK.csproj" />
     <ProjectReference Include="..\..\Devices\Devices.Verifone\Devices.Verifone.csproj" />
-    <ProjectReference Include="..\SignatureProcessor\SignatureProcessor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="application\SignatureEngine\Helpers\" />
   </ItemGroup>
 
 </Project>

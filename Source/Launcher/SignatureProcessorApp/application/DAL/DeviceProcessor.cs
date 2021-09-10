@@ -1,6 +1,7 @@
 ﻿using Devices.Common;
 using Devices.Verifone;
 using Devices.Verifone.VIPA;
+using SignatureProcessorApp.application.DAL.Helpers;
 using SignatureProcessorApp.devices.common;
 using SignatureProcessorApp.devices.common.Helpers;
 using SignatureProcessorApp.devices.Verifone.Helpers;
@@ -8,6 +9,8 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using XO.Requests;
 
 namespace SignatureProcessorApp.application.DAL
 {
@@ -65,7 +68,8 @@ namespace SignatureProcessorApp.application.DAL
 
             if (active)
             {
-                (HTMLResponseObject htmlResponseObject, int VipaResponse) htmlResponseObject = device.GetSignature();
+                LinkRequest linkRequest = RequestBuilder.LinkGetSignatureRequest();
+                (HTMLResponseObject htmlResponseObject, int VipaResponse) htmlResponseObject = device.GetSignature(linkRequest, CancellationToken.None);
 
                 if (htmlResponseObject.VipaResponse == (int)VipaSW1SW2Codes.Success)
                 {

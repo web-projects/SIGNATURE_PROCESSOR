@@ -3,6 +3,7 @@ using Devices.Common.SignatureProcessor;
 using Devices.SignatureProcessor;
 using Devices.Verifone.Tests.Helpers;
 using Devices.Verifone.VIPA;
+using Devices.Verifone.VIPA.Interfaces;
 using SignatureProcessorApp.devices.common;
 using SignatureProcessorApp.devices.Verifone.Helpers;
 using System;
@@ -50,15 +51,15 @@ namespace Devices.Verifone.Tests
                 //currentDeviceInformation.ConfigurationHostId = 0x05;
                 //currentDeviceInformation.OnlinePinKeySetId = 0x01;
             }
-            else
-            {
-                currentDeviceInformation = new DeviceInformation()
-                {
-                    Manufacturer = subject.ManufacturerConfigID,
-                    Model = subject.Name,
-                    SerialNumber = "DEADBEEF",
-                };
-            }
+            //else
+            //{
+            //    currentDeviceInformation = new DeviceInformation()
+            //    {
+            //        Manufacturer = subject.ManufacturerConfigID,
+            //        Model = subject.Name,
+            //        SerialNumber = "DEADBEEF",
+            //    };
+            //}
         }
 
         public void Dispose()

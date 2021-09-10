@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Devices.Verifone.TLV
+namespace Devices.Verifone.VIPA.TagLengthValue
 {
     public static class HMACHasher
     {

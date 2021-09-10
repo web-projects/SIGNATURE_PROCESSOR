@@ -489,15 +489,15 @@ namespace Devices.Verifone.Tests.Helpers
                 linkDALRequest = new LinkDALRequest();
             }
 
-            if (linkDALRequest.DALIdentifier == null)
-            {
-                linkDALRequest.DALIdentifier = MockDALIdentifier(linkDALRequest.DALIdentifier);
-            }
+            //if (linkDALRequest.DALIdentifier == null)
+            //{
+            //    linkDALRequest.DALIdentifier = MockDALIdentifier(linkDALRequest.DALIdentifier);
+            //}
 
-            if (addLookupPreference && (linkDALRequest.DALIdentifier.LookupPreference == null))
-            {
-                linkDALRequest.DALIdentifier.LookupPreference = LinkDALLookupPreference.WorkstationName;
-            }
+            //if (addLookupPreference && (linkDALRequest.DALIdentifier.LookupPreference == null))
+            //{
+            //    linkDALRequest.DALIdentifier.LookupPreference = LinkDALLookupPreference.WorkstationName;
+            //}
 
             return linkDALRequest;
         }

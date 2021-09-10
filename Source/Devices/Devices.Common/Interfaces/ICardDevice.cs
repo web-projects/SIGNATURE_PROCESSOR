@@ -22,7 +22,7 @@ namespace Devices.Common.Interfaces
 
         DeviceInformation DeviceInformation { get; }
 
-        bool IsConnected(object request);
+        bool IsConnected(LinkRequest request);
 
         List<DeviceInformation> DiscoverDevices();
 

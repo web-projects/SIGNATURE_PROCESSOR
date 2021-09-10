@@ -25,8 +25,6 @@ namespace Devices.Simulator
         [Inject]
         private ISerialConnection serialConnection { get; set; } = new SerialConnection();
 
-        private bool IsConnected { get; set; }
-
         //public event PublishEvent PublishEvent;
         public event DeviceEventHandler DeviceEventOccured;
 
@@ -68,9 +66,9 @@ namespace Devices.Simulator
             serialConnection?.Dispose();
         }
 
-        bool ICardDevice.IsConnected(object request)
+        public bool IsConnected(LinkRequest request)
         {
-            return IsConnected;
+            return true;
         }
 
         public List<DeviceInformation> DiscoverDevices()
@@ -107,7 +105,7 @@ namespace Devices.Simulator
                 VendorIdentifier = "BADDCACA"
             };
             deviceInfo = DeviceInformation;
-            active = IsConnected = serialConnection.Connect(config.SerialConfig.CommPortName);
+            active = serialConnection.Connect(config.SerialConfig.CommPortName);
 
             return null;
         }

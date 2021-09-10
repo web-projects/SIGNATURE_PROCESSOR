@@ -1,9 +1,10 @@
 ﻿using Config.Config;
 using Devices.Common.Helpers;
+using Devices.Common.Helpers.Templates;
 using Devices.Verifone.Connection;
 using Devices.Verifone.Helpers;
-using Devices.Verifone.TLV;
-using Devices.Verifone.VIPA.Templates;
+using Devices.Verifone.VIPA.Interfaces;
+using Devices.Verifone.VIPA.TagLengthValue;
 using SignatureProcessorApp.common.xo.Responses.DAL;
 using SignatureProcessorApp.devices.Verifone.Helpers;
 using SignatureProcessorApp.devices.Verifone.VIPA.Helpers;
@@ -60,13 +61,13 @@ namespace Devices.Verifone.VIPA
 
         public TaskCompletionSource<int> ResponseCodeResult = null;
 
-        public delegate void ResponseTagsHandlerDelegate(List<TLV.TLV> tags, int responseCode, bool cancelled = false);
+        public delegate void ResponseTagsHandlerDelegate(List<TLV> tags, int responseCode, bool cancelled = false);
         internal ResponseTagsHandlerDelegate ResponseTagsHandler = null;
 
-        public delegate void ResponseTaglessHandlerDelegate(byte[] data, int responseCode, bool cancelled = false);
+        public delegate void ResponseTaglessHandlerDelegate(byte[] data, int dataLength, int responseCode, bool cancelled = false);
         internal ResponseTaglessHandlerDelegate ResponseTaglessHandler = null;
 
-        public delegate void ResponseCLessHandlerDelegate(List<TLV.TLV> tags, int responseCode, int pcb, bool cancelled = false);
+        public delegate void ResponseCLessHandlerDelegate(List<TLV> tags, int responseCode, int pcb, bool cancelled = false);
         internal ResponseCLessHandlerDelegate ResponseCLessHandler = null;
 
         public TaskCompletionSource<(DevicePTID devicePTID, int VipaResponse)> DeviceResetConfiguration = null;
@@ -82,20 +83,27 @@ namespace Devices.Verifone.VIPA
 
         public TaskCompletionSource<(LinkDALRequestIPA5Object linkDALRequestIPA5Object, int VipaResponse)> DeviceInteractionInformation { get; set; } = null;
 
+        private List<byte[]> signaturePayload = null;
+
         #endregion --- attributes ---
 
         #region --- connection ---
-        private SerialConnection serialConnection { get; set; }
+        private SerialConnection VerifoneConnection { get; set; }
 
         public bool Connect(string comPort, SerialConnection connection)
         {
-            serialConnection = connection;
-            return serialConnection.Connect(comPort);
+            VerifoneConnection = connection;
+            return VerifoneConnection.Connect();
+        }
+
+        public bool IsConnected()
+        {
+            return VerifoneConnection?.IsConnected() ?? false;
         }
 
         public void Dispose()
         {
-            serialConnection?.Dispose();
+            VerifoneConnection?.Dispose();
         }
 
         #endregion --- connection ---
@@ -137,7 +145,7 @@ namespace Devices.Verifone.VIPA
 
         private void WriteSingleCmd(VIPACommand command)
         {
-            serialConnection?.WriteSingleCmd(new VIPAResponseHandlers
+            VerifoneConnection?.WriteSingleCmd(new VIPAResponseHandlers
             {
                 responsetagshandler = ResponseTagsHandler,
                 responsetaglesshandler = ResponseTaglessHandler,
@@ -147,7 +155,7 @@ namespace Devices.Verifone.VIPA
 
         private void WriteRawBytes(byte[] buffer)
         {
-            serialConnection?.WriteRaw(buffer);
+            VerifoneConnection?.WriteRaw(buffer, buffer.Length);
         }
 
         private void SendVipaCommand(VIPACommandType commandType, byte p1, byte p2, byte[] data = null, byte nad = 0x1, byte pcb = 0x0)
@@ -295,23 +303,16 @@ namespace Devices.Verifone.VIPA
                 //            - PIPE_INTERNAL, 6 - WIFI, 7 - GPRS)
                 // Bit 14 - 1 - Connect to external pinpad (PP1000SEV3) and set EXTERNAL_PINPAD to ON
                 // Bit 15 - 1 - Disconnect external pinpad (PP1000SEV3) and set EXTERNAL_PINPAD to OFF
-                var dataForReset = new List<TLV.TLV>
+                TLV dataForReset = new TLV
                 {
-                    new TLV.TLV
+                    Tag = E0Template.E0TemplateTag,
+                    InnerTags = new List<TLV>
                     {
-                        Tag = new byte[] { 0xE0 },
-                        InnerTags = new List<TLV.TLV>
-                        {
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0xDF, 0xED, 0x0D },
-                                Data = new byte[] { 0x02, 0x0F }
-                            }
-                        }
+                        new TLV(E0Template.ResetDeviceFlags, new byte[] { 0x02, 0x0F })
                     }
                 };
-                TLV.TLV tlv = new TLV.TLV();
-                byte[] dataForResetData = tlv.Encode(dataForReset);
+
+                byte[] dataForResetData = TLV.Encode(dataForReset);
 
                 Debug.WriteLine(ConsoleMessages.DeviceExtendedReset.GetStringValue());
                 //VIPACommand command = new VIPACommand { nad = 0x01, pcb = 0x00, cla = 0xD0, ins = 0x0A, p1 = 0x00, p2 = 0x00, data = dataForResetData };
@@ -445,23 +446,18 @@ namespace Devices.Verifone.VIPA
 
             DeviceKernelConfiguration = new TaskCompletionSource<(KernelConfigurationObject kernelConfigurationObject, int VipaResponse)>();
 
-            var aidRequestedTransaction = new List<TLV.TLV>
+            List<TLV> aidRequestedTransaction = new List<TLV>
             {
-                new TLV.TLV
+                new TLV
                 {
-                    Tag = new byte[] { 0xE0 },
-                    InnerTags = new List<TLV.TLV>
+                    Tag = E0Template.E0TemplateTag,
+                    InnerTags = new List<TLV>
                     {
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0x9F, 0x06, 0x0E },      // AID A000000003101001
-                            Data = new byte[] { 0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10 }
-                        }
+                        new TLV(E0Template.EMVKernelAidGenerator, new byte[] { 0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10 })  // AID A000000003101001
                     }
                 }
             };
-            TLV.TLV tlv = new TLV.TLV();
-            var aidRequestedTransactionData = tlv.Encode(aidRequestedTransaction);
+            var aidRequestedTransactionData = TLV.Encode(aidRequestedTransaction);
 
             //VIPACommand command = new VIPACommand { nad = 0x01, pcb = 0x00, cla = 0xDE, ins = 0x01, p1 = 0x00, p2 = 0x00, data = aidRequestedTransactionData };
             //WriteSingleCmd(command);
@@ -832,28 +828,16 @@ namespace Devices.Verifone.VIPA
 
             DeviceSecurityConfiguration = new TaskCompletionSource<(SecurityConfigurationObject securityConfigurationObject, int VipaResponse)>();
 
-            var dataForHMAC = new List<TLV.TLV>
+            var dataForHMAC = new TLV
             {
-                new TLV.TLV
+                Tag = E0Template.E0TemplateTag,
+                InnerTags = new List<TLV>
                 {
-                    Tag = new byte[] { 0xE0 },
-                    InnerTags = new List<TLV.TLV>
-                    {
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x0E },
-                            Data = ConversionHelper.HexToByteArray(MAC)
-                        },
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x23 },
-                            Data = new byte[] { Convert.ToByte(hostID) }
-                        }
-                    }
+                    new TLV(E0Template.MACGenerationData, ConversionHelper.HexToByteArray(MAC)),
+                    new TLV(E0Template.MACHostId, new byte[] { Convert.ToByte(hostID) })
                 }
             };
-            TLV.TLV tlv = new TLV.TLV();
-            var dataForHMACData = tlv.Encode(dataForHMAC);
+            var dataForHMACData = TLV.Encode(dataForHMAC);
 
             //VIPACommand command = new VIPACommand { nad = 0x01, pcb = 0x00, cla = 0xC4, ins = 0x22, p1 = 0x00, p2 = 0x00, data = dataForHMACData };
             //WriteSingleCmd(command);
@@ -870,35 +854,35 @@ namespace Devices.Verifone.VIPA
 
         public int UpdateHMACKeys()
         {
-            string generatedHMAC = GetCurrentKSNHMAC();
+            //string generatedHMAC = GetCurrentKSNHMAC();
 
             // KEY 06 Generation
-            byte[] hmac_generated_key = ConversionHelper.HexToByteArray(generatedHMAC);
+            //byte[] hmac_generated_key = ConversionHelper.HexToByteArray(generatedHMAC);
 
             // Signature = HMAC_old(old XOR new) - array1 is smaller or equal in size as array2
-            byte[] hmac_signature_06 = ConversionHelper.XORArrays(hmac_generated_key, HMACValidator.HMACKEY06);
+            //byte[] hmac_signature_06 = ConversionHelper.XORArrays(hmac_generated_key, HMACValidator.HMACKEY06);
 
-            var dataKey06HMAC = FormatE0Tag(HMACValidator.HMACKEY06, hmac_signature_06);
-            TLV.TLV tlv = new TLV.TLV();
-            byte[] dataForHMACData = tlv.Encode(dataKey06HMAC);
+            //var dataKey06HMAC = FormatE0Tag(HMACValidator.HMACKEY06, hmac_signature_06);
+            //byte[] dataForHMACData = TLV.Encode(dataKey06HMAC);
 
             // key slot 06
-            int vipaResponse = UpdateHMACKey(0x06, dataForHMACData);
+            //int vipaResponse = UpdateHMACKey(0x06, dataForHMACData);
 
-            if (vipaResponse == (int)VipaSW1SW2Codes.Success)
-            {
-                // KEY 07 Generation
-                byte[] hmac_signature_07 = ConversionHelper.XORArrays(hmac_generated_key, HMACValidator.HMACKEY07);
+            //if (vipaResponse == (int)VipaSW1SW2Codes.Success)
+            //{
+            //    // KEY 07 Generation
+            //    byte[] hmac_signature_07 = ConversionHelper.XORArrays(hmac_generated_key, HMACValidator.HMACKEY07);
 
-                var dataKey07HMAC = FormatE0Tag(HMACValidator.HMACKEY07, hmac_signature_07);
-                tlv = new TLV.TLV();
-                dataForHMACData = tlv.Encode(dataKey07HMAC);
+            //    var dataKey07HMAC = FormatE0Tag(HMACValidator.HMACKEY07, hmac_signature_07);
+            //    dataForHMACData = TLV.Encode(dataKey07HMAC);
 
-                // key slot 07
-                vipaResponse = UpdateHMACKey(0x07, dataForHMACData);
-            }
+            //    // key slot 07
+            //    vipaResponse = UpdateHMACKey(0x07, dataForHMACData);
+            //}
 
-            return vipaResponse;
+            //return vipaResponse;
+
+            return 0;
         }
 
         public (HTMLResponseObject htmlResponseObject, int VipaResponse) GetSignature()
@@ -921,49 +905,24 @@ namespace Devices.Verifone.VIPA
                 ResponseTagsHandlerSubscribed++;
                 ResponseTagsHandler += GetSignatureResponseHandler;
 
-                string signatureFile = "mapp/signature.html";
-                string[] signatureMessage = { "please_sign_text", "ENTER SIGNATURE" };
-                string[] signatureLogo = { "logo_image", "signature.bmp" };
+                byte[] signatureFile = Encoding.ASCII.GetBytes("mapp/signature.html");
+                byte[][] signatureMessage = { Encoding.ASCII.GetBytes("please_sign_text"), Encoding.ASCII.GetBytes("ENTER SIGNATURE") };
+                byte[][] signatureLogo = { Encoding.ASCII.GetBytes("logo_image"), Encoding.ASCII.GetBytes("signature.bmp") };
 
-                var dataForSignature = new List<TLV.TLV>
+                var getSignatureData = new TLV
                 {
-                    new TLV.TLV
+                    Tag = E0Template.E0TemplateTag,
+                    InnerTags = new List<TLV>
                     {
-                        Tag = new byte[] { 0xE0 },
-                        InnerTags = new List<TLV.TLV>
-                        {
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0xDF, 0xAA, 0x01 },
-                                Data = Encoding.ASCII.GetBytes(signatureFile)
-                            },
-                            // VALUE PAIR
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0xDF, 0xAA, 0x02 },
-                                Data = Encoding.ASCII.GetBytes(signatureMessage[0])
-                            },
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0xDF, 0xAA, 0x03 },
-                                Data = Encoding.ASCII.GetBytes(signatureMessage[1])
-                            },
-                            // VALUE PAIR
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0xDF, 0xAA, 0x02 },
-                                Data = Encoding.ASCII.GetBytes(signatureLogo[0])
-                            },
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0xDF, 0xAA, 0x03 },
-                                Data = Encoding.ASCII.GetBytes(signatureLogo[1])
-                            }
-                        }
+                        new TLV(SignatureTemplate.SignatureFile, signatureFile),
+                        new TLV(SignatureTemplate.HTMLKey, signatureMessage[0]),
+                        new TLV(SignatureTemplate.HTMLValue, signatureMessage[1]),
+                        new TLV(SignatureTemplate.HTMLKey, signatureLogo[0]),
+                        new TLV(SignatureTemplate.HTMLValue, signatureLogo[1])
                     }
                 };
-                TLV.TLV tlv = new TLV.TLV();
-                byte[] dataForSignatureData = tlv.Encode(dataForSignature);
+
+                byte[] dataForSignatureData = TLV.Encode(getSignatureData);
 
                 ResponseCodeResult = new TaskCompletionSource<int>();
 
@@ -983,112 +942,95 @@ namespace Devices.Verifone.VIPA
                 //    DeviceHTMLResponse = new TaskCompletionSource<(HTMLResponseObject HTMLResponseObject, int VipaResponse)>(TaskCreationOptions.RunContinuationsAsynchronously);
                 //    deviceResponse = DeviceHTMLResponse.Task.Result;
 
-                    //    do
-                    //    {
-                    //        LinkDALRequestIPA5Object cardInfo = DeviceInteractionInformation.Task.Result.linkDALRequestIPA5Object;
-                    //        commandResult.vipaResponse = DeviceInteractionInformation.Task.Result.VipaResponse;
+                //    do
+                //    {
+                //        LinkDALRequestIPA5Object cardInfo = DeviceInteractionInformation.Task.Result.linkDALRequestIPA5Object;
+                //        commandResult.vipaResponse = DeviceInteractionInformation.Task.Result.VipaResponse;
 
-                    //        // First receive is throw away
-                    //        //deviceResponse = DeviceHTMLResponse.Task.Result;
+                //        // First receive is throw away
+                //        //deviceResponse = DeviceHTMLResponse.Task.Result;
 
-                    //        if (cardInfo?.DALResponseData?.Status?.Equals("UserKeyPressed") ?? false)
-                    //        {
-                    //            Debug.WriteLine($"KEY PRESSED: {cardInfo.DALResponseData.Value}");
-                    //            Console.WriteLine($"KEY PRESSED: {cardInfo.DALResponseData.Value}");
-                    //            // <O> == 1 : YES
-                    //            // <X> == 2 : NO
-                    //            if (cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_1.ToString()) || cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_OK.ToString()))
-                    //            {
-                    //                commandResult.vipaData = 1;
-                    //            }
-                    //            else if (cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_2.ToString()) || cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_STOP.ToString()))
-                    //            {
-                    //                commandResult.vipaData = 0;
-                    //            }
-                    //            else
-                    //            {
-                    //                commandResult.vipaResponse = (int)VipaSW1SW2Codes.Failure;
-                    //                DeviceInteractionInformation = new TaskCompletionSource<(LinkDALRequestIPA5Object linkDALRequestIPA5Object, int VipaResponse)>();
-                    //            }
-                    //        }
+                //        if (cardInfo?.DALResponseData?.Status?.Equals("UserKeyPressed") ?? false)
+                //        {
+                //            Debug.WriteLine($"KEY PRESSED: {cardInfo.DALResponseData.Value}");
+                //            Console.WriteLine($"KEY PRESSED: {cardInfo.DALResponseData.Value}");
+                //            // <O> == 1 : YES
+                //            // <X> == 2 : NO
+                //            if (cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_1.ToString()) || cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_OK.ToString()))
+                //            {
+                //                commandResult.vipaData = 1;
+                //            }
+                //            else if (cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_2.ToString()) || cardInfo.DALResponseData.Value.Equals(DeviceKeys.KEY_STOP.ToString()))
+                //            {
+                //                commandResult.vipaData = 0;
+                //            }
+                //            else
+                //            {
+                //                commandResult.vipaResponse = (int)VipaSW1SW2Codes.Failure;
+                //                DeviceInteractionInformation = new TaskCompletionSource<(LinkDALRequestIPA5Object linkDALRequestIPA5Object, int VipaResponse)>();
+                //            }
+                //        }
 
-                    //    } while (commandResult.vipaResponse == (int)VipaSW1SW2Codes.Failure);
+                //    } while (commandResult.vipaResponse == (int)VipaSW1SW2Codes.Failure);
 
-                    //    ResponseTagsHandler -= GetSignatureResponseHandler;
-                    //    ResponseTagsHandlerSubscribed--;
-                    //}
+                //    ResponseTagsHandler -= GetSignatureResponseHandler;
+                //    ResponseTagsHandlerSubscribed--;
+                //}
 
-                    //// Stop keyboard reader
-                    //StopKeyboardReader();
+                //// Stop keyboard reader
+                //StopKeyboardReader();
                 //}
             }
 
             return deviceResponse;
         }
 
-        private List<TLV.TLV> FormatE0Tag(byte[] hmackey, byte[] generated_hmackey)
-        {
-            return new List<TLV.TLV>
-            {
-                new TLV.TLV
-                {
-                    Tag = new byte[] { 0xE0 },
-                    InnerTags = new List<TLV.TLV>
-                    {
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x46 },
-                            Data = new byte[] { 0x03 }
-                        },
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x2E },
-                            Data = hmackey
-                        },
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xED, 0x15 },
-                            Data = generated_hmackey
-                        }
-                    }
-                }
-            };
-        }
+        //private List<TLV> FormatE0Tag(byte[] hmackey, byte[] generated_hmackey)
+        //{
+        //    return new List<TLV>
+        //    {
+        //        new TLV
+        //        {
+        //            Tag = new byte[] { 0xE0 },
+        //            InnerTags = new List<TLV>
+        //            {
+        //                new TLV
+        //                {
+        //                    Tag = new byte[] { 0xDF, 0xEC, 0x46 },
+        //                    Data = new byte[] { 0x03 }
+        //                },
+        //                new TLV
+        //                {
+        //                    Tag = new byte[] { 0xDF, 0xEC, 0x2E },
+        //                    Data = hmackey
+        //                },
+        //                new TLV
+        //                {
+        //                    Tag = new byte[] { 0xDF, 0xED, 0x15 },
+        //                    Data = generated_hmackey
+        //                }
+        //            }
+        //        }
+        //    };
+        //}
 
-        private string GetCurrentKSNHMAC()
+        private string GetCurrentKSNHMAC(int hostID, string MAC)
         {
             DeviceSecurityConfiguration = new TaskCompletionSource<(SecurityConfigurationObject securityConfigurationObject, int VipaResponse)>();
 
             ResponseTagsHandlerSubscribed++;
             ResponseTagsHandler += GetGeneratedHMACResponseHandler;
 
-            var dataForHMAC = new List<TLV.TLV>
+            var messageForHMAC = new TLV
             {
-                new TLV.TLV
+                Tag = E0Template.E0TemplateTag,
+                InnerTags = new List<TLV>
                 {
-                    Tag = new byte[] { 0xE0 },
-                    InnerTags = new List<TLV.TLV>
-                    {
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x0E },
-                            Data = new byte[] { 0x00 }
-                        },
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x23 },
-                            Data = new byte[] { 0x06 }
-                        },
-                        new TLV.TLV
-                        {
-                            Tag = new byte[] { 0xDF, 0xEC, 0x23 },
-                            Data = new byte[] { 0x07 }
-                        }
-                    }
+                    new TLV(E0Template.MACGenerationData, ConversionHelper.HexToByteArray(MAC) ),
+                    new TLV(E0Template.MACHostId, new byte[] { Convert.ToByte(hostID) })
                 }
             };
-            TLV.TLV tlv = new TLV.TLV();
-            byte[] dataForHMACData = tlv.Encode(dataForHMAC);
+            byte[] dataForHMACData = TLV.Encode(messageForHMAC);
 
             Debug.WriteLine(ConsoleMessages.UpdateHMACKeys.GetStringValue());
             //VIPACommand command = new VIPACommand { nad = 0x01, pcb = 0x00, cla = 0xC4, ins = 0x22, p1 = 0x00, p2 = 0x00, data = dataForHMACData };
@@ -1141,33 +1083,21 @@ namespace Devices.Verifone.VIPA
 
                 FileInfo fileInfo = new FileInfo(targetFile);
                 long fileLength = fileInfo.Length;
-                byte[] fileSize = new byte[4];
-                Array.Copy(BitConverter.GetBytes(fileLength), 0, fileSize, 0, fileSize.Length);
-                Array.Reverse(fileSize);
+                byte[] streamSize = new byte[4];
+                Array.Copy(BitConverter.GetBytes(fileLength), 0, streamSize, 0, streamSize.Length);
+                Array.Reverse(streamSize);
 
                 // File information
-                var fileInformation = new List<TLV.TLV>
+                var fileInformation = new TLV
                 {
-                    new TLV.TLV
+                    Tag = _6FTemplate._6fTemplateTag,
+                    InnerTags = new List<TLV>()
                     {
-                        Tag = new byte[] { 0x6F },
-                        InnerTags = new List<TLV.TLV>
-                        {
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0x84 },
-                                Data = Encoding.ASCII.GetBytes(fileName.ToLower())
-                            },
-                            new TLV.TLV
-                            {
-                                Tag = new byte[] { 0x80 },
-                                Data = fileSize
-                            }
-                        }
+                        new TLV(_6FTemplate.FileNameTag, Encoding.UTF8.GetBytes(fileName)),
+                        new TLV(_6FTemplate.FileSizeTag, streamSize),
                     }
                 };
-                TLV.TLV tlv = new TLV.TLV();
-                byte[] fileInformationData = tlv.Encode(fileInformation);
+                byte[] fileInformationData = TLV.Encode(fileInformation);
 
                 DeviceBinaryStatusInformation = new TaskCompletionSource<(BinaryStatusObject binaryStatusObject, int VipaResponse)>();
                 //VIPACommand command = new VIPACommand { nad = 0x01, pcb = 0x00, cla = 0x00, ins = 0xA5, p1 = 0x05, p2 = 0x81, data = fileInformationData };
@@ -1369,12 +1299,12 @@ namespace Devices.Verifone.VIPA
             ResponseCLessHandler = null;
         }
 
-        public void ResponseCodeHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void ResponseCodeHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
             ResponseCodeResult?.TrySetResult(cancelled ? -1 : responseCode);
         }
 
-        public void DeviceResetResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void DeviceResetResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
             if (cancelled || tags == null)
             {
@@ -1384,7 +1314,7 @@ namespace Devices.Verifone.VIPA
 
             var deviceResponse = new DevicePTID();
 
-            if (tags.FirstOrDefault().Tag.SequenceEqual(E0Template.PtidTag))
+            if (tags.FirstOrDefault().Tag == EETemplate.TerminalId)
             {
                 deviceResponse.PTID = BitConverter.ToString(tags.FirstOrDefault().Data).Replace("-", "");
             }
@@ -1402,7 +1332,7 @@ namespace Devices.Verifone.VIPA
             }
         }
 
-        private void GetDeviceInfoResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        private void GetDeviceInfoResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
             if (cancelled)
             {
@@ -1432,26 +1362,26 @@ namespace Devices.Verifone.VIPA
 
             foreach (var tag in tags)
             {
-                if (tag.Tag.SequenceEqual(EETemplate.EETemplateTag))
+                if (tag.Tag == EETemplate.EETemplateTag)
                 {
                     foreach (var dataTag in tag.InnerTags)
                     {
-                        if (dataTag.Tag.SequenceEqual(EETemplate.TerminalNameTag) && string.IsNullOrEmpty(deviceResponse.Model))
+                        if (dataTag.Tag == EETemplate.TerminalName && string.IsNullOrEmpty(deviceResponse.Model))
                         {
                             deviceResponse.Model = Encoding.UTF8.GetString(dataTag.Data);
                         }
-                        else if (dataTag.Tag.SequenceEqual(EETemplate.SerialNumberTag) && string.IsNullOrWhiteSpace(deviceResponse.SerialNumber))
+                        else if (dataTag.Tag == EETemplate.SerialNumber && string.IsNullOrWhiteSpace(deviceResponse.SerialNumber))
                         {
                             deviceResponse.SerialNumber = Encoding.UTF8.GetString(dataTag.Data);
                             //deviceInformation.SerialNumber = deviceResponse.SerialNumber ?? string.Empty;
                         }
-                        else if (dataTag.Tag.SequenceEqual(EETemplate.TamperStatus))
+                        else if (dataTag.Tag == EETemplate.TamperStatus)
                         {
                             //DF8101 = 00 no tamper detected
                             //DF8101 = 01 tamper detected
                             //cardInfo.TamperStatus = Encoding.UTF8.GetString(dataTag.Data);
                         }
-                        else if (dataTag.Tag.SequenceEqual(EETemplate.ArsStatus))
+                        else if (dataTag.Tag == EETemplate.ArsStatus)
                         {
                             //DF8102 = 00 ARS not active
                             //DF8102 = 01 ARS active
@@ -1459,42 +1389,41 @@ namespace Devices.Verifone.VIPA
                         }
                     }
                 }
-                else if (tag.Tag.SequenceEqual(EETemplate.TerminalIdTag))
+                else if (tag.Tag == EETemplate.TerminalId)
                 {
                     //deviceResponse.TerminalId = Encoding.UTF8.GetString(tag.Data);
                 }
-                else if (tag.Tag.SequenceEqual(EFTemplate.EFTemplateTag))
+                else if (tag.Tag == EFTemplate.EFTemplateTag)
                 {
                     foreach (var dataTag in tag.InnerTags)
                     {
-                        if (dataTag.Tag.SequenceEqual(EFTemplate.WhiteListHash))
+                        if (dataTag.Tag == EFTemplate.WhiteListHash)
                         {
                             //cardInfo.WhiteListHash = BitConverter.ToString(dataTag.Data).Replace("-", "");
                         }
-                        else if (dataTag.Tag.SequenceEqual(EFTemplate.FirmwareVersion) && string.IsNullOrWhiteSpace(deviceResponse.FirmwareVersion))
+                        else if (dataTag.Tag == EFTemplate.FirmwareVersion && string.IsNullOrWhiteSpace(deviceResponse.FirmwareVersion))
                         {
                             deviceResponse.FirmwareVersion = Encoding.UTF8.GetString(dataTag.Data);
                         }
                     }
                 }
-                else if (tag.Tag.SequenceEqual(E6Template.E6TemplateTag))
+                else if (tag.Tag == E6Template.E6TemplateTag)
                 {
                     deviceResponse.PowerOnNotification = new XO.Responses.Device.LinkDevicePowerOnNotification();
 
-                    TLV.TLV tlv = new TLV.TLV();
-                    var _tags = tlv.Decode(tag.Data, 0, tag.Data.Length);
+                    var _tags = TLV.Decode(tag.Data, 0, tag.Data.Length);
 
                     foreach (var dataTag in _tags)
                     {
-                        if (dataTag.Tag.SequenceEqual(E6Template.TransactionStatusTag))
+                        if (dataTag.Tag == E6Template.TransactionStatus)
                         {
                             deviceResponse.PowerOnNotification.TransactionStatus = BCDConversion.BCDToInt(dataTag.Data);
                         }
-                        else if (dataTag.Tag.SequenceEqual(E6Template.TransactionStatusMessageTag))
+                        else if (dataTag.Tag == E6Template.TransactionStatusMessage)
                         {
                             deviceResponse.PowerOnNotification.TransactionStatusMessage = Encoding.UTF8.GetString(dataTag.Data);
                         }
-                        else if (dataTag.Tag.SequenceEqual(EETemplate.TerminalIdTag))
+                        else if (dataTag.Tag == EETemplate.TerminalId)
                         {
                             deviceResponse.PowerOnNotification.TerminalID = Encoding.UTF8.GetString(dataTag.Data);
                         }
@@ -1520,7 +1449,8 @@ namespace Devices.Verifone.VIPA
             }
         }
 
-        public void GetSecurityInformationResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void GetSecurityInformationResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
+
         {
             if (cancelled || tags == null)
             {
@@ -1532,27 +1462,27 @@ namespace Devices.Verifone.VIPA
 
             foreach (var tag in tags)
             {
-                if (tag.Tag.SequenceEqual(E0Template.E0TemplateTag))
+                if (tag.Tag == E0Template.E0TemplateTag)
                 {
                     foreach (var dataTag in tag.InnerTags)
                     {
-                        if (dataTag.Tag.SequenceEqual(E0Template.OnlinePINKSNTag))
+                        if (dataTag.Tag == E0Template.OnlinePINKSN)
                         {
                             deviceResponse.OnlinePinKSN = BitConverter.ToString(dataTag.Data).Replace("-", "");
                         }
-                        if (dataTag.Tag.SequenceEqual(E0Template.KeySlotNumberTag))
+                        if (dataTag.Tag == E0Template.KeySlotNumber)
                         {
                             deviceResponse.KeySlotNumber = BitConverter.ToString(dataTag.Data).Replace("-", "");
                         }
-                        else if (dataTag.Tag.SequenceEqual(E0Template.SRedCardKSNTag))
+                        else if (dataTag.Tag == E0Template.SRedCardKSN)
                         {
                             deviceResponse.SRedCardKSN = BitConverter.ToString(dataTag.Data).Replace("-", "");
                         }
-                        else if (dataTag.Tag.SequenceEqual(E0Template.InitVectorTag))
+                        else if (dataTag.Tag == E0Template.InitVector)
                         {
                             deviceResponse.InitVector = BitConverter.ToString(dataTag.Data).Replace("-", "");
                         }
-                        else if (dataTag.Tag.SequenceEqual(E0Template.EncryptedKeyCheckTag))
+                        else if (dataTag.Tag == E0Template.EncryptedKeyCheck)
                         {
                             deviceResponse.EncryptedKeyCheck = BitConverter.ToString(dataTag.Data).Replace("-", "");
                         }
@@ -1573,7 +1503,7 @@ namespace Devices.Verifone.VIPA
             }
         }
 
-        public void GetKernelInformationResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void GetKernelInformationResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
             if (cancelled || tags == null)
             {
@@ -1586,11 +1516,11 @@ namespace Devices.Verifone.VIPA
             foreach (var tag in tags)
             {
                 // note: we just need the first instance
-                if (tag.Tag.SequenceEqual(E0Template.E0TemplateTag))
+                if (tag.Tag == E0Template.E0TemplateTag)
                 {
-                    var kernelApplicationTag = tag.InnerTags.Where(x => x.Tag.SequenceEqual(E0Template.ApplicationAIDTag)).FirstOrDefault();
+                    var kernelApplicationTag = tag.InnerTags.Where(x => x.Tag == E0Template.ApplicationAID).FirstOrDefault();
                     deviceResponse.ApplicationIdentifierTerminal = BitConverter.ToString(kernelApplicationTag.Data).Replace("-", "");
-                    var kernelChecksumTag = tag.InnerTags.Where(x => x.Tag.SequenceEqual(E0Template.KernelConfigurationTag)).FirstOrDefault();
+                    var kernelChecksumTag = tag.InnerTags.Where(x => x.Tag == E0Template.KernelConfiguration).FirstOrDefault();
                     deviceResponse.ApplicationKernelInformation = ConversionHelper.ByteArrayToAsciiString(kernelChecksumTag.Data).Replace("\0", string.Empty);
                     break;
                 }
@@ -1609,10 +1539,8 @@ namespace Devices.Verifone.VIPA
             }
         }
 
-        public void GetGeneratedHMACResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void GetGeneratedHMACResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
-            var MACTag = new byte[] { 0xDF, 0xEC, 0x7B };
-
             if (cancelled || tags == null)
             {
                 DeviceSecurityConfiguration?.TrySetResult((null, responseCode));
@@ -1621,7 +1549,7 @@ namespace Devices.Verifone.VIPA
 
             var deviceResponse = new SecurityConfigurationObject();
 
-            if (tags.FirstOrDefault().Tag.SequenceEqual(MACTag))
+            if (tags[0].Tag == E0Template.Cryptogram)
             {
                 deviceResponse.GeneratedHMAC = BitConverter.ToString(tags.FirstOrDefault().Data).Replace("-", "");
             }
@@ -1639,7 +1567,7 @@ namespace Devices.Verifone.VIPA
             }
         }
 
-        public void GetBinaryStatusResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void GetBinaryStatusResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
             if (cancelled || tags == null)
             {
@@ -1651,22 +1579,21 @@ namespace Devices.Verifone.VIPA
 
             foreach (var tag in tags)
             {
-                if (tag.Tag.SequenceEqual(_6FTemplate._6fTemplateTag))
+                if (tag.Tag == _6FTemplate._6fTemplateTag)
                 {
-                    TLV.TLV tlv = new TLV.TLV();
-                    var _tags = tlv.Decode(tag.Data, 0, tag.Data.Length);
+                    var _tags = TLV.Decode(tag.Data, 0, tag.Data.Length);
 
                     foreach (var dataTag in _tags)
                     {
-                        if (dataTag.Tag.SequenceEqual(_6FTemplate.FileSizeTag))
+                        if (dataTag.Tag == _6FTemplate.FileSizeTag)
                         {
                             deviceResponse.FileSize = BCDConversion.BCDToInt(dataTag.Data);
                         }
-                        else if (dataTag.Tag.SequenceEqual(_6FTemplate.FileCheckSumTag))
+                        else if (dataTag.Tag == _6FTemplate.FileCheckSumTag)
                         {
                             deviceResponse.FileCheckSum = BitConverter.ToString(dataTag.Data, 0).Replace("-", "");
                         }
-                        else if (dataTag.Tag.SequenceEqual(_6FTemplate.SecurityStatusTag))
+                        else if (dataTag.Tag == _6FTemplate.SecurityStatusTag)
                         {
                             deviceResponse.SecurityStatus = BCDConversion.BCDToInt(dataTag.Data);
                         }
@@ -1688,7 +1615,7 @@ namespace Devices.Verifone.VIPA
             }
         }
 
-        public void GetBinaryDataResponseHandler(byte[] data, int responseCode, bool cancelled = false)
+        public void GetBinaryDataResponseHandler(byte[] data, int dataLength, int responseCode, bool cancelled = false)
         {
             if (cancelled)
             {
@@ -1711,89 +1638,89 @@ namespace Devices.Verifone.VIPA
             DeviceBinaryStatusInformation?.TrySetResult((deviceResponse, responseCode));
         }
 
-        public void GetSignatureResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void GetSignatureResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
-            byte[] htmlKeyTag = new byte[] { 0xDF, 0xAA, 0x02 };
-            byte[] htmlValTag = new byte[] { 0xDF, 0xAA, 0x03 };
-            byte[] htmlResultsTag = new byte[] { 0xDF, 0xAA, 0x05 };
-
-            if (cancelled || tags == null)
+            if (cancelled)
             {
-                DeviceHTMLResponse?.TrySetResult((null, responseCode));
+                int response = responseCode == (int)VipaSW1SW2Codes.Success ? (int)VipaSW1SW2Codes.UserEntryCancelled : responseCode;
+                DeviceInteractionInformation?.TrySetResult((null, response));
                 return;
             }
 
-            // command executing...
-            if (tags.Count == 0)
-            {
-                return;
-            }
-
-            var deviceResponse = new HTMLResponseObject();
+            bool okButtonPressed = false;
+            bool collectPoints = false;
+            LinkDALRequestIPA5Object deviceResponse = new LinkDALRequestIPA5Object();
             deviceResponse.SignatureData = new List<byte[]>();
 
-            if (tags.FirstOrDefault().Tag.SequenceEqual(htmlResultsTag))
+            if (responseCode == (int)VipaSW1SW2Codes.Success && tags != null && tags.Count > 0)
             {
-                foreach (var tag in tags)
+                foreach (TLV tag in tags)
                 {
-                    // Check for CANCEL in results
-                    if (tag.Tag.SequenceEqual(htmlResultsTag))
+                    if (tag.Tag == SignatureTemplate.HTMLKey)
                     {
-                        Array.Reverse(tag.Data);
-                        if (BitConverter.ToInt32(tag.Data) == 0x04)
+                        string signatureName = Encoding.UTF8.GetString(tag.Data).Replace("-", "");
+                        if (signatureName.Equals("signatureTwo", StringComparison.OrdinalIgnoreCase))
                         {
-                            //LinkDALRequestIPA5Object cardResponse = new LinkDALRequestIPA5Object();
-                            //cardResponse.DALResponseData = new LinkDALActionResponse
-                            //{
-                            //    Status = "UserKeyPressed",
-                            //    Value = DeviceKeys.KEY_STOP.ToString()
-                            //};
-                            DeviceHTMLResponse?.TrySetResult((null, responseCode));
-                            return;
+                            deviceResponse.SignatureName = Encoding.UTF8.GetString(tag.Data).Replace("-", "");
+                            collectPoints = true;
                         }
                     }
-                    else if (tag.Tag.SequenceEqual(htmlValTag) && tag.Data.Length > 0)
+                    else if (tag.Tag == SignatureTemplate.HTMLValue && tag.Data.Length > 0 && collectPoints)
                     {
+                        collectPoints = false;
                         byte[] worker = ArrayPool<byte>.Shared.Rent(tag.Data.Length);
                         Array.Copy(tag.Data, 0, worker, 0, tag.Data.Length);
                         deviceResponse.SignatureData.Add(worker);
                     }
-
-                    //else if (tag.Tag.SequenceEqual(htmlKeyTag) && tag.Data.Length > 0)
-                    //{
-                    //    string buttonPressed = Encoding.UTF8.GetString(tag.Data);
-                    //    if (buttonPressed.Equals("cancelBtn", StringComparison.OrdinalIgnoreCase))
-                    //    {
-                    //        LinkDALRequestIPA5Object cardResponse = new LinkDALRequestIPA5Object();
-                    //        cardResponse.DALResponseData = new LinkDALActionResponse
-                    //        {
-                    //            Status = "UserKeyPressed",
-                    //            Value = DeviceKeys.KEY_STOP.ToString()
-                    //        };
-                    //        DeviceInteractionInformation?.TrySetResult((cardResponse, responseCode));
-                    //        return;
-                    //    }
-                    //}
+                    else if (tag.Tag == SignatureTemplate.HTMLResponse)
+                    {
+                        int responseStatus = BCDConversion.BCDToInt(tag.Data);
+                        if (responseStatus == 0)
+                        {
+                            okButtonPressed = true;
+                        }
+                        else if (responseStatus == (int)DeviceKeys.KEY_CORR)
+                        {
+                            DeviceInteractionInformation?.TrySetResult((null, (int)VipaSW1SW2Codes.UserEntryCorrected));
+                            return;
+                        }
+                        else
+                        {
+                            DeviceInteractionInformation?.TrySetResult((null, (int)VipaSW1SW2Codes.UserEntryCancelled));
+                            return;
+                        }
+                    }
                 }
             }
 
             if (responseCode == (int)VipaSW1SW2Codes.Success)
             {
-                if (tags.Count > 1)
+                if (tags.Count > 0)
                 {
                     if (deviceResponse.SignatureData is { } && deviceResponse.SignatureData.Count > 0)
                     {
-                        DeviceHTMLResponse?.TrySetResult((deviceResponse, responseCode));
+                        if (Buffer.ByteLength(deviceResponse.SignatureData[0]) > 0)
+                        {
+                            signaturePayload = deviceResponse.SignatureData;
+                            DeviceInteractionInformation?.TrySetResult((deviceResponse, responseCode));
+                        }
+                    }
+                    else if (okButtonPressed)
+                    {
+                        DeviceInteractionInformation?.TrySetResult((null, (int)VipaSW1SW2Codes.DataMissing));
                     }
                 }
             }
             else
             {
-                DeviceHTMLResponse?.TrySetResult((null, responseCode));
+                // log error responses for device troubleshooting purposes
+                //DeviceLogger(LogLevel.Error, string.Format("VIPA STATUS CODE=0x{0:X4}", responseCode));
+                Debug.WriteLine(string.Format("VIPA STATUS CODE=0x{0:X4}", responseCode));
+                DeviceInteractionInformation?.TrySetResult((null, responseCode));
             }
         }
 
-        public void GetDeviceInteractionKeyboardResponseHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false)
+        public void GetDeviceInteractionKeyboardResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
         {
             bool returnResponse = false;
 
@@ -1806,11 +1733,11 @@ namespace Devices.Verifone.VIPA
 
             LinkDALRequestIPA5Object cardResponse = new LinkDALRequestIPA5Object();
 
-            foreach (TLV.TLV tag in tags)
+            foreach (TLV tag in tags)
             {
                 if (tag.Tag == E0Template.E0TemplateTag)
                 {
-                    foreach (TLV.TLV dataTag in tag.InnerTags)
+                    foreach (TLV dataTag in tag.InnerTags)
                     {
                         if (dataTag.Tag == E0Template.KeyPress)
                         {

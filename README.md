@@ -27,7 +27,13 @@ This an application for WPF Signature Testing.
 
 *  AUTO-CONVERTING CRLF line endings into LF
    $ git config --global core.autocrlf true
-   
+
+### BUILD ISSUES ###
+
+*  PointCollection class could not be found
+   Namespace: System.Windows.Media
+   Assembly: PresentationCore.dll
+
 ### HISTORY ###
 
 * 20201118 - Initial repository

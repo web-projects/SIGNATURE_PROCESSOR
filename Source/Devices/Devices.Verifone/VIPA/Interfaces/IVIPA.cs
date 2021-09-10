@@ -1,19 +1,21 @@
-﻿using Devices.Verifone.Helpers;
-using Devices.Verifone.TLV;
-using Devices.Verifone.Connection;
+﻿using Devices.Verifone.Connection;
+using Devices.Verifone.Helpers;
+using Devices.Verifone.VIPA.TagLengthValue;
+using SignatureProcessorApp.devices.Verifone.Helpers;
 using System.Collections.Generic;
 using static Devices.Verifone.VIPA.VIPAImpl;
-using SignatureProcessorApp.devices.Verifone.Helpers;
 
-namespace Devices.Verifone.VIPA
+namespace Devices.Verifone.VIPA.Interfaces
 {
     public interface IVIPA
     {
         bool Connect(string comPort, SerialConnection connection);
+        
+        bool IsConnected();
 
         void Dispose();
-        
-        void ResponseCodeHandler(List<TLV.TLV> tags, int responseCode, bool cancelled = false);
+
+        void ResponseCodeHandler(List<TLV> tags, int responseCode, bool cancelled = false);
 
         bool DisplayMessage(VIPADisplayMessageValue displayMessageValue = VIPADisplayMessageValue.Idle, bool enableBacklight = false, string customMessage = "");
 
