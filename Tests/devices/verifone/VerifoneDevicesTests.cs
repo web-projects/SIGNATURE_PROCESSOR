@@ -97,7 +97,9 @@ namespace Devices.Verifone.Tests
             LinkRequest linkRequest = RequestBuilder.LinkGetSignatureRequest();
 
             //LinkRequest linkRequestResponse = subject.GetSignature(linkRequest, CancellationToken.None);
-            (HTMLResponseObject htmlResponseObject, int VipaResponse) = subject.GetSignature(linkRequest, CancellationToken.None);
+            subject.GetSignature(linkRequest, CancellationToken.None);
+
+            //(HTMLResponseObject htmlResponseObject, int VipaResponse) =
 
             //Assert.Null(linkRequestResponse.LinkObjects.LinkActionResponseList[0].Errors);
             //Assert.Equal(1, linkRequestResponse.LinkObjects.LinkActionResponseList[0].DALResponse.Devices?.Count);

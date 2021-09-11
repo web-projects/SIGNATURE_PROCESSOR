@@ -3,6 +3,8 @@ using Devices.Verifone.Helpers;
 using Devices.Verifone.VIPA.TagLengthValue;
 using SignatureProcessorApp.devices.Verifone.Helpers;
 using System.Collections.Generic;
+using XO.Private;
+using XO.Requests;
 using static Devices.Verifone.VIPA.VIPAImpl;
 
 namespace Devices.Verifone.VIPA.Interfaces
@@ -50,5 +52,7 @@ namespace Devices.Verifone.VIPA.Interfaces
         int UpdateHMACKeys();
 
         (HTMLResponseObject htmlResponseObject, int VipaResponse) GetSignature();
+
+        (LinkDALRequestIPA5Object linkActionRequestIPA5Object, int VipaResponse) ProcessSignatureRequest(LinkActionRequest linkRequest);
     }
 }

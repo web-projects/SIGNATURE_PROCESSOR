@@ -13,6 +13,7 @@ namespace Devices.Verifone.Connection
 {
     internal class VIPASerialParserImpl : IVIPASerialParser, IDisposable
     {
+        #region --- Attributes ---
         private enum ReadErrorLevel
         {
             None,
@@ -42,6 +43,7 @@ namespace Devices.Verifone.Connection
         private ReadErrorLevel readErrorLevel = ReadErrorLevel.None;
 
         private static ConcurrentDictionary<string, int> numReadErrors;
+        #endregion ---Attributes ---
 
         public VIPASerialParserImpl(DeviceLogHandler deviceLogHandler, string comPort)
         {
@@ -116,26 +118,39 @@ namespace Devices.Verifone.Connection
                 readErrorLevel = ReadErrorLevel.Invalid_PCB;
                 return true;
             }
-            else if (combinedResponseBytes[2] > (combinedResponseLength - 4))  // 3 + 1
+            else if (combinedResponseBytes[2] > (combinedResponseLength - 4) &&
+                (combinedResponseBytes[1] & 0x01) != 0x01)  // command is not chained
             {
                 readErrorLevel = ReadErrorLevel.Invalid_CombinedBytes;
                 return true;
             }
             else
             {
+                bool isChainedCommand = (combinedResponseBytes[1] & 0x01) == 0x01;
+
                 // Validate LRC
                 byte lrc = CalculateLRCFromByteArray(combinedResponseBytes);
 
-                if (combinedResponseBytes[combinedResponseBytes[2] + 3] != lrc) // offset from length to LRC is 3
+                int maxPacketLen = Math.Min((combinedResponseBytes[2] + 3), combinedResponseBytes.Length - 1);
+
+                if (!isChainedCommand && combinedResponseBytes[maxPacketLen] != lrc) // offset from length to LRC is 3
                 {
                     readErrorLevel = ReadErrorLevel.Missing_LRC;
                     return true;
                 }
-                else if ((combinedResponseBytes[1] & 0x01) == 0x01)     //Command is chained (VIPA section 2.4)
+                else if (isChainedCommand)     // Command is chained (VIPA section 2.4)
                 {
+                    //int componentBytesLength = Math.Min((int)combinedResponseBytes[2], combinedResponseBytes.Length);
                     int componentBytesLength = (int)combinedResponseBytes[2];
                     byte[] componentBytes = arrayPool.Rent(componentBytesLength);
-                    Buffer.BlockCopy(combinedResponseBytes, 3, componentBytes, 0, componentBytesLength);
+
+                    // copy component bytes
+                    //Buffer.BlockCopy(combinedResponseBytes, 3, componentBytes, 0, componentBytesLength);
+                    for (int i = 0; i < componentBytesLength - 1; i++)
+                    {
+                        componentBytes[i] = combinedResponseBytes[i + 3];
+                    }
+
                     addedComponentBytes.Add(new Tuple<int, byte[]>(componentBytesLength, componentBytes));
                     consumedResponseBytesLength = componentBytesLength + 4; // 3 + 1  
                     readErrorLevel = ReadErrorLevel.CombinedBytes_MisMatch;
@@ -226,13 +241,17 @@ namespace Devices.Verifone.Connection
                         if (combinedResponseBytes is null || combinedResponseLength == 0)
                         {
                             //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"Error reading vipa-byte stream({readErrorLevel}): 0 || <null>");
-                            Debug.WriteLine($"Error reading vipa-byte stream({readErrorLevel}");
+                            Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"Error reading vipa-byte stream({readErrorLevel}");
                         }
                         else
                         {
                             //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"Error reading vipa-byte stream({readErrorLevel}): " + BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength));
-                            Debug.WriteLine($"Error reading vipa-byte stream({readErrorLevel}): " + BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength));
+                            Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"Error reading vipa-byte stream({readErrorLevel}): " + BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength));
                         }
+                    }
+                    else
+                    {
+                        Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-READ [{comPort}]: CHAINED RESPONSE MESSAGE - CANNOT PROCESS REQUEST !!!");
                     }
 
                     if (consumedResponseBytesLength >= combinedResponseLength)
@@ -261,21 +280,24 @@ namespace Devices.Verifone.Connection
 
         public bool SanityCheck()
         {
+            Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheck in progress....");
+
             bool sane = true;
+
             if (combinedResponseLength > 0 || combinedResponseBytes is { })
             {
                 sane = false;
                 if (combinedResponseBytes is { })
                 {
                     //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"VIPA-PARSE[{comPort}]: SanityCheckFailed-{combinedResponseLength}-{BitConverter.ToString(combinedResponseBytes, 0, combinedResponseBytes.Length)}");
-                    Debug.WriteLine($"VIPA-PARSE[{comPort}]: SanityCheckFailed-{combinedResponseLength}-{BitConverter.ToString(combinedResponseBytes, 0, combinedResponseBytes.Length)}");
+                    Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheckFailed-LEN={combinedResponseLength}\r\nBYTES: [{BitConverter.ToString(combinedResponseBytes, 0, combinedResponseBytes.Length)}]");
                     arrayPool.Return(combinedResponseBytes);
                     combinedResponseBytes = null;
                 }
                 else
                 {
                     //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"VIPA-PARSE[{comPort}]: SanityCheckFailed-{combinedResponseLength}");
-                    Debug.WriteLine($"VIPA-PARSE[{comPort}]: SanityCheckFailed-{combinedResponseLength}");
+                    Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheckFailed-LEN={combinedResponseLength}");
                     combinedResponseLength = 0;
                 }
             }
@@ -283,11 +305,11 @@ namespace Devices.Verifone.Connection
             {
                 sane = false;
                 //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"VIPA-PARSE[{comPort}]: SanityCheckFailedComponentCheck-{addedComponentBytes.Count}");
-                Debug.WriteLine($"VIPA-PARSE[{comPort}]: SanityCheckFailedComponentCheck-{addedComponentBytes.Count}");
+                Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheckFailedComponentCheck-LEN={addedComponentBytes.Count}");
                 foreach (Tuple<int, byte[]> component in addedComponentBytes)
                 {
                     //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"VIPA-PARSE[{comPort}]: SanityCheckFailed-StoredComponent-{BitConverter.ToString(component.Item2, 0, component.Item1)}");
-                    Debug.WriteLine($"VIPA-PARSE[{comPort}]: SanityCheckFailed-StoredComponent-{BitConverter.ToString(component.Item2, 0, component.Item1)}");
+                    Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheckFailed-StoredComponent\r\nBYTES: [{BitConverter.ToString(component.Item2, 0, component.Item1)}]");
                     arrayPool.Return(component.Item2);
                 }
                 addedComponentBytes.Clear();
@@ -296,8 +318,11 @@ namespace Devices.Verifone.Connection
             {
                 sane = false;
                 //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Warn, $"VIPA-PARSE[{comPort}]: SanityCheckFailedStateCheck-{readErrorLevel}");
-                Debug.WriteLine($"VIPA-PARSE[{comPort}]: SanityCheckFailedStateCheck-{readErrorLevel}");
+                Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheckFailedStateCheck-{readErrorLevel}");
             }
+
+            Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-PARSE[{comPort}]: SanityCheck complete - STATUS={sane}");
+
             return sane;
         }
 
@@ -311,8 +336,12 @@ namespace Devices.Verifone.Connection
 
         private byte CalculateLRCFromByteArray(byte[] array)
         {
+            // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes)
+            //int maxPacketLen = Math.Min((array[2] + 3), (0xFE - 0x01));
+            int maxPacketLen = Math.Min((array[2] + 3), array.Length - 1);
+
             byte lrc = 0x00;
-            for (int index = 0; index < (array[2] + 3); index++)
+            for (int index = 0; index < maxPacketLen; index++)
             {
                 lrc ^= array[index];
             }

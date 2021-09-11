@@ -237,7 +237,10 @@ namespace Devices.Verifone.Connection
                     continue;
                 }
 
-                byte[] buffer = arrayPool.Rent(1024);  //Read the whole thing if possible.
+                // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes)
+                //byte[] buffer = arrayPool.Rent(254);
+
+                byte[] buffer = arrayPool.Rent(1024);
 
                 bool moreData = serialPort?.IsOpen ?? false;
 

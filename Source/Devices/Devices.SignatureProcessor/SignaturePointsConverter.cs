@@ -67,8 +67,11 @@ namespace Devices.SignatureProcessor
                 i--;
             }
 
-            byte[] copy = new byte[i + 1];
-            Array.Copy(bytes, copy, i + 1);
+            int arrayLen = i + 1;
+            byte[] copy = new byte[arrayLen];
+
+            Array.Copy(bytes, copy, arrayLen);
+            Array.Resize<byte>(ref copy, arrayLen);
 
             return copy;
         }

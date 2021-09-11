@@ -9,12 +9,14 @@ using Devices.Verifone.VIPA.Interfaces;
 using Ninject;
 using SignatureProcessorApp.devices.Verifone.Helpers;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XO.Device;
+using XO.Private;
 using XO.Requests;
 using XO.Responses;
 
@@ -219,9 +221,45 @@ namespace Devices.Verifone
             return VipaDevice;
         }
 
-        private (HTMLResponseObject htmlResponseObject, int VipaResponse) ProcessSignatureRequest(IVIPA device, LinkRequest request, LinkActionRequest linkActionRequest, CancellationToken cancellationToken)
+        //private (HTMLResponseObject htmlResponseObject, int VipaResponse) ProcessSignatureRequest(IVIPA device, LinkRequest request, LinkActionRequest linkActionRequest, CancellationToken cancellationToken)
+        //{
+        //    (HTMLResponseObject htmlResponseObject, int VipaResponse) htmlResult = VipaDevice.GetSignature();
+
+        //    // check for timeout
+        //    if (cancellationToken.IsCancellationRequested)
+        //    {
+        //        // Reset contactless reader to hide contactless status bar if device is unplugged and replugged during a payment workflow
+        //        _ = Task.Run(() => VipaDevice.CloseContactlessReader(true));
+        //        //SetErrorResponse(linkActionRequest, EventCodeType.REQUEST_TIMEOUT, VipaResponse, StringValueAttribute.GetStringValue(DeviceEvent.RequestTimeout));
+        //        return (null, 0);
+        //    }
+
+        //    if (htmlResult.VipaResponse == (int)VipaSW1SW2Codes.Success)
+        //    {
+        //        int offset = htmlResult.htmlResponseObject.SignatureData.Count == 1 ? 0 : 1;
+        //        byte[] prunedArray = SignaturePointsConverter.PruneByteArray(htmlResult.htmlResponseObject.SignatureData[offset]);
+
+        //        // Remove end-of-stroke separator
+        //        byte[] signatureImagePayload = SignaturePointsConverter.ConvertPointsToImage(prunedArray.Where(x => x != 0).ToArray());
+
+        //        request.Actions[0].DALRequest.LinkObjects.ESignatureImage = signatureImagePayload;
+        //        request.Actions[0].DALRequest.LinkObjects.MaxBytes = signatureImagePayload.Length;
+
+        //        // note: paste the below code into VerifoneDevice::ProcessSignatureRequest method above the code that "Cleans up Memory"
+        //        // Convert to image and output to "C:\Temp\Signature.json"
+
+        //        using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
+        //        {
+        //            file.Write(prunedArray, 0, prunedArray.Length);
+        //        }
+        //    }
+
+        //    return htmlResult;
+        //}
+
+        private void ProcessSignatureRequest(IVIPA device, LinkRequest request, LinkActionRequest linkActionRequest, CancellationToken cancellationToken)
         {
-            (HTMLResponseObject htmlResponseObject, int VipaResponse) htmlResult = VipaDevice.GetSignature();
+            (LinkDALRequestIPA5Object linkActionRequestIPA5Object, int VipaResponse) = device.ProcessSignatureRequest(linkActionRequest);
 
             // check for timeout
             if (cancellationToken.IsCancellationRequested)
@@ -229,30 +267,40 @@ namespace Devices.Verifone
                 // Reset contactless reader to hide contactless status bar if device is unplugged and replugged during a payment workflow
                 _ = Task.Run(() => VipaDevice.CloseContactlessReader(true));
                 //SetErrorResponse(linkActionRequest, EventCodeType.REQUEST_TIMEOUT, VipaResponse, StringValueAttribute.GetStringValue(DeviceEvent.RequestTimeout));
-                return (null, 0);
+                return;
             }
 
-            if (htmlResult.VipaResponse == (int)VipaSW1SW2Codes.Success)
+            if (VipaResponse == (int)VipaSW1SW2Codes.Success)
             {
-                int offset = htmlResult.htmlResponseObject.SignatureData.Count == 1 ? 0 : 1;
-                byte[] prunedArray = SignaturePointsConverter.PruneByteArray(htmlResult.htmlResponseObject.SignatureData[offset]);
-
-                // Remove end-of-stroke separator
-                byte[] signatureImagePayload = SignaturePointsConverter.ConvertPointsToImage(prunedArray.Where(x => x != 0).ToArray());
-
-                request.Actions[0].DALRequest.LinkObjects.ESignatureImage = signatureImagePayload;
-                request.Actions[0].DALRequest.LinkObjects.MaxBytes = signatureImagePayload.Length;
-
-                // note: paste the below code into VerifoneDevice::ProcessSignatureRequest method above the code that "Cleans up Memory"
-                // Convert to image and output to "C:\Temp\Signature.json"
-
-                using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                // allow for single signature capture
+                if (linkActionRequestIPA5Object.SignatureData.Count > 0)
                 {
-                    file.Write(prunedArray, 0, prunedArray.Length);
+                    request.Actions[0].DALRequest.LinkObjects.SignatureData = linkActionRequestIPA5Object.SignatureData;
+                    request.Actions[0].DALRequest.LinkObjects.SignatureName = linkActionRequestIPA5Object.SignatureName;
+
+                    int offset = linkActionRequestIPA5Object.SignatureData.Count == 1 ? 0 : 1;
+                    byte[] prunedArray = SignaturePointsConverter.PruneByteArray(linkActionRequestIPA5Object.SignatureData[offset]);
+
+                    // Remove end-of-stroke separator
+                    byte[] signatureImagePayload = SignaturePointsConverter.ConvertPointsToImage(prunedArray.Where(x => x != 0).ToArray());
+
+                    request.Actions[0].DALRequest.LinkObjects.ESignatureImage = signatureImagePayload;
+                    request.Actions[0].DALRequest.LinkObjects.MaxBytes = signatureImagePayload.Length;
+
+                    using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                    {
+                        file.Write(prunedArray, 0, prunedArray.Length);
+                    }
+
+                    // Clean up Memory
+                    foreach (byte[] array in request.Actions[0].DALRequest.LinkObjects.SignatureData)
+                    {
+                        ArrayPool<byte>.Shared.Return(array, true);
+                    }
+
+                    //DeviceLogger(LogLevel.Info, "signature has been captured.");
                 }
             }
-
-            return htmlResult;
         }
 
         // ------------------------------------------------------------------------
@@ -711,17 +759,15 @@ namespace Devices.Verifone
             return linkRequest;
         }
 
-        public (HTMLResponseObject htmlResponseObject, int VipaResponse) GetSignature(LinkRequest linkRequest, CancellationToken cancellationToken)
+        public LinkRequest GetSignature(LinkRequest linkRequest, CancellationToken cancellationToken)
         {
             Console.WriteLine($"DEVICE[{DeviceInformation.ComPort}]: GET SIGNATURE.");
             if (VipaDevice != null)
             {
                 LinkActionRequest linkActionRequest = linkRequest.Actions.FirstOrDefault();
-                return ProcessSignatureRequest(VipaDevice, linkRequest, linkActionRequest, cancellationToken);
-
-                //return VipaDevice.GetSignature();
+                ProcessSignatureRequest(VipaDevice, linkRequest, linkActionRequest, cancellationToken);
             }
-            return (null, (int)VipaSW1SW2Codes.Failure);
+            return linkRequest;
         }
 
         public override bool DeviceRecoveryWithMessagePreservation()
