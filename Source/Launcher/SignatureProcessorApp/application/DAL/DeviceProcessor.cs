@@ -110,6 +110,14 @@ namespace SignatureProcessorApp.application.DAL
                 //    }
                 //}
 
+
+                if (linkRequest.Actions[0].DALRequest.LinkObjects.ESignatureImage != null &&
+                    linkRequest.Actions[0].DALRequest.LinkObjects.SignatureData != null)
+                {
+                    //signatureCapture = new MemoryStream(linkRequest.Actions[0].DALRequest.LinkObjects.ESignatureImage);
+                    signatureCapture = new MemoryStream(linkRequest.Actions[0].DALRequest.LinkObjects.SignatureData[0]);
+                }
+
                 Task.Run(() => device.DeviceSetIdle());
             }
 
@@ -162,7 +170,7 @@ namespace SignatureProcessorApp.application.DAL
                 //Debug.WriteLine("Task end. cost:{0}", time.ElapsedMilliseconds);
 
                 device.GetSignature(linkRequest, cancellationTokenSource.Token);
-
+                
                 operationCompleted = true;
 
                 resetEvent.Set();

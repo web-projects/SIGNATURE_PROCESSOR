@@ -1,4 +1,5 @@
-﻿using Devices.Common;
+﻿using Common.LoggerManager;
+using Devices.Common;
 using Devices.Common.Helpers;
 using Devices.Common.Interfaces;
 using Devices.SignatureProcessor;
@@ -7,7 +8,6 @@ using Devices.Verifone.Helpers;
 using Devices.Verifone.VIPA;
 using Devices.Verifone.VIPA.Interfaces;
 using Ninject;
-using SignatureProcessorApp.devices.Verifone.Helpers;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -281,24 +281,30 @@ namespace Devices.Verifone
                     int offset = linkActionRequestIPA5Object.SignatureData.Count == 1 ? 0 : 1;
                     byte[] prunedArray = SignaturePointsConverter.PruneByteArray(linkActionRequestIPA5Object.SignatureData[offset]);
 
+                    Logger.debug($"{BitConverter.ToString(prunedArray, 0, prunedArray.Length).Replace("-", "")}");
+
                     // Remove end-of-stroke separator
                     byte[] signatureImagePayload = SignaturePointsConverter.ConvertPointsToImage(prunedArray.Where(x => x != 0).ToArray());
 
+                    request.Actions[0].DALRequest.LinkObjects.SignatureData[0] = prunedArray;
                     request.Actions[0].DALRequest.LinkObjects.ESignatureImage = signatureImagePayload;
-                    request.Actions[0].DALRequest.LinkObjects.MaxBytes = signatureImagePayload.Length;
+                    request.Actions[0].DALRequest.LinkObjects.MaxBytes = signatureImagePayload?.Length ?? 0;
 
-                    using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                    if (request.Actions[0].DALRequest.LinkObjects.MaxBytes > 0)
                     {
-                        file.Write(prunedArray, 0, prunedArray.Length);
+                        using (System.IO.FileStream file = new System.IO.FileStream(System.IO.Path.Combine("C:\\Temp", "Signature.json"), System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                        {
+                            file.Write(prunedArray, 0, prunedArray.Length);
+                        }
                     }
 
                     // Clean up Memory
-                    foreach (byte[] array in request.Actions[0].DALRequest.LinkObjects.SignatureData)
-                    {
-                        ArrayPool<byte>.Shared.Return(array, true);
-                    }
+                    //foreach (byte[] array in request.Actions[0].DALRequest.LinkObjects.SignatureData)
+                    //{
+                    //    ArrayPool<byte>.Shared.Return(array, true);
+                    //}
 
-                    //DeviceLogger(LogLevel.Info, "signature has been captured.");
+                    Logger.debug(string.Format("signature conversion: {0}", request.Actions[0].DALRequest.LinkObjects.MaxBytes > 0 ? "SUCCESS" : "FAILED"));
                 }
             }
         }

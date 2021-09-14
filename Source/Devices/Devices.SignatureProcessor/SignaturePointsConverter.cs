@@ -1,8 +1,10 @@
-﻿using Devices.Common.Helpers;
+﻿using Common.LoggerManager;
+using Devices.Common.Helpers;
 using Devices.Common.SignatureProcessor;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 
@@ -38,19 +40,31 @@ namespace Devices.SignatureProcessor
         public static byte[] ConvertPointsToImage(byte[] signaturePointsInBytes)
         {
             string json = ConversionHelper.ByteArrayCodedHextoString(signaturePointsInBytes);
+            Logger.debug($"{json}");
 
             // look for closing bracket
-            json = json.Substring(0, json.LastIndexOf(']') + 1);
-            List<SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
-            List<PointF[]> pointCollection = FormatPointsForBitmap(signaturePoints);
+            string jsonPayload = json.Substring(0, json.LastIndexOf(']') + 1);
 
-            Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
-
-            using (var stream = new MemoryStream())
+            try
             {
-                signatureBmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                return stream.ToArray();
+                List<SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(jsonPayload);
+                List<PointF[]> pointCollection = FormatPointsForBitmap(signaturePoints);
+
+                Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
+
+                using (var stream = new MemoryStream())
+                {
+                    signatureBmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                    return stream.ToArray();
+                }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception converting signature points: {ex.Message}");
+                Logger.error($"Exception converting signature points: {ex.Message}");
+            }
+
+            return null;
         }
 
         public static byte[] PruneByteArray(byte[] bytes)
@@ -62,7 +76,8 @@ namespace Devices.SignatureProcessor
 
             int i = bytes.Length - 1;
 
-            while (bytes[i] == 0)
+            // remove non-printable characters in the stream
+            while (bytes[i] <= 0x20 || bytes[1] >= 0x7F)
             {
                 i--;
             }

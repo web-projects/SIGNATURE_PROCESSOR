@@ -1,11 +1,12 @@
-﻿using Devices.Common;
-using Devices.Common.SerialPort;
+﻿using Common.LoggerManager;
+using Devices.Common;
 using Devices.Verifone.Connection.Interfaces;
 using Devices.Verifone.VIPA;
 using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -238,7 +239,7 @@ namespace Devices.Verifone.Connection
                 }
 
                 // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes)
-                //byte[] buffer = arrayPool.Rent(254);
+                //byte[] buffer = arrayPool.Rent(256);
 
                 byte[] buffer = arrayPool.Rent(1024);
 
@@ -251,7 +252,11 @@ namespace Devices.Verifone.Connection
                         if (serialPort.BytesToRead > 0)
                         {
                             int readLength = serialPort.Read(buffer, 0, buffer.Length);
+                            
                             Debug.WriteLineIf(LogSerialBytes, $"VIPA-READ [{serialPort.PortName}]: {BitConverter.ToString(buffer, 0, readLength)}");
+                            //Logger.debug($"{ BitConverter.ToString(buffer, 0, readLength)}");
+                            Logger.debug($"{BitConverter.ToString(buffer, 0, readLength).Replace("-", "")}");
+
                             serialParser.BytesRead(buffer, readLength);
                         }
                         else

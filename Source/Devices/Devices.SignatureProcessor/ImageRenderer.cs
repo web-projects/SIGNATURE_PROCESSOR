@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Devices.SignatureProcessor;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -11,7 +12,7 @@ namespace Devices.Common.SignatureProcessor
 
         public static Bitmap CreateBitmapFromPoints(List<PointF[]> signaturePoints)
         {
-            Bitmap signatureBmp = new Bitmap(800, 480);
+            Bitmap signatureBmp = new Bitmap(SignatureParameters.M400BitmapWidth, SignatureParameters.M400BitmapHeight);
             Graphics flagGraphics = Graphics.FromImage(signatureBmp);
 
             // Create pen.

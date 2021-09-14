@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SignatureProcessorApp"
         mc:Ignorable="d"
-        Title="SIGNATURE WINDOW" Height="450" Width="800">
+        Title="SIGNATURE WINDOW" Height="480" Width="900">
     <Grid Background="LightGreen">
         <Grid.RowDefinitions>
             <RowDefinition Height="80" />
@@ -14,7 +14,7 @@
             <RowDefinition Height="40" />
         </Grid.RowDefinitions>
 
-        <Canvas Grid.Row="1" x:Name="SignatureCapture" Background="White" Width="400" Height="200">
+        <Canvas Grid.Row="1" x:Name="SignatureCapture" Background="White" Width="854" Height="240">
             <!--Border x:Name="border" BorderBrush="Black" BorderThickness="2">
                 <Image x:Name="SignatureImage" Source="Assets/Background.jpg"></Image>
             </Border-->

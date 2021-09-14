@@ -36,7 +36,7 @@ namespace SignatureProcessor.Processor
             using (StreamReader r = new StreamReader(stream))
             {
                 string json = r.ReadToEnd();
-                byte[] deCypheredArray = ConversionHelper.HexToByteArray(json);
+                //byte[] deCypheredArray = ConversionHelper.HexToByteArray(json);
                 signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
             }
         }

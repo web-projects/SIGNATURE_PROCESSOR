@@ -1,22 +1,18 @@
-﻿using Microsoft.Win32;
-using SignatureProcessorApp.application.DAL;
+﻿using Common.LoggerManager;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Win32;
 using SignatureProcessor.Processor;
+using SignatureProcessorApp.application.DAL;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
-using Microsoft.Extensions.Configuration;
-using Common.LoggerManager;
-using System.Linq;
 
 namespace SignatureProcessorApp
 {
@@ -28,6 +24,7 @@ namespace SignatureProcessorApp
         private static readonly string SignatureFilename = "Signature.png";
         private static readonly string SignatureResource = "SignatureProcessorApp.application.Assets.Signature.json";
         private Storyboard blinkStoryboard;
+        private bool runOnce = false;
 
         private const bool LOAD_FROM_RESOURCE = true;
 
@@ -46,22 +43,39 @@ namespace SignatureProcessorApp
             SetLogging(configuration);
         }
 
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+
+            // Start application
+            if (!runOnce)
+            {
+                runOnce = true;
+                AutoRun();
+            }
+        }
+
         private void InitializeLayout()
         {
             SetBlinkingAnimation();
             btnShow.IsEnabled = File.Exists(SignatureFilename);
         }
 
-        private string[] GetLoggingLevels(IConfiguration configuration, int index)
+        private string[] GetLoggingLevels(IConfiguration configuration)
         {
             return configuration.GetSection("LoggerManager:Logging").GetValue<string>("Levels").Split("|");
+        }
+
+        private bool GetLogfileMode(IConfiguration configuration)
+        {
+            return configuration.GetSection("LoggerManager:Logging").GetValue<bool>("Overwrite");
         }
 
         private void SetLogging(IConfiguration configuration)
         {
             try
             {
-                string[] logLevels = GetLoggingLevels(configuration, 0);
+                string[] logLevels = GetLoggingLevels(configuration);
 
                 if (logLevels.Length > 0)
                 {
@@ -81,6 +95,15 @@ namespace SignatureProcessorApp
 
                     Logger.SetFileLoggerConfiguration(filepath, levels);
 
+
+                    if (GetLogfileMode(configuration))
+                    {
+                        if (File.Exists(filepath))
+                        {
+                            File.Delete(filepath);
+                        }
+                    }
+
                     Logger.info("LOGGING INITIALIZED.");
 
                     //Logger.info( "LOG ARG1:", "1111");
@@ -97,12 +120,24 @@ namespace SignatureProcessorApp
             }
         }
 
+        private void AutoRun()
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                SignatureCapture.Dispatcher.Invoke((Action)(async () =>
+                {
+                    await ProcessSignatureRequest();
+                }));
+            });
+        }
+
         private void LoadSignatureImageFromResource()
         {
             //List<PointCollection> pointCollection = SignatureEngine.SetLinesPointFromResource(this, SignatureResource);
 
             //Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
-            
+
             //string filePath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             //string fileName = System.IO.Path.Combine(filePath, SignatureFilename);
 
@@ -153,7 +188,54 @@ namespace SignatureProcessorApp
             blinkStoryboard.Children.Add(blinkAnimation);
         }
 
-        private async void GetSignature_Click(object sender, RoutedEventArgs e)
+        private void GetSignature_Click(object sender, RoutedEventArgs e)
+        {
+            _ = ProcessSignatureRequest();
+        }
+
+        private void ShowImage_Click(object sender, RoutedEventArgs e)
+        {
+            // Check for Button mode
+            if (btnShow.Content.Equals("Show"))
+            {
+                //if (ImageRenderer.RenderToPNGFile(SignatureCapture, SignatureFilename))
+                //{
+                //    Microsoft.Win32.OpenFileDialog openFileDialong1 = new Microsoft.Win32.OpenFileDialog();
+                //    openFileDialong1.Filter = "Image files (.png)|*.png";
+                //    openFileDialong1.Title = "Open an Image File";
+                //    openFileDialong1.ShowDialog();
+
+                //    string fileName = openFileDialong1.FileName;
+
+                //    if (!string.IsNullOrEmpty(fileName))
+                //    {
+                //        ShowImageWindow window = new ShowImageWindow();
+                //        if (window.ShowImageFromFile(fileName))
+                //        { 
+                //            window.Show();
+                //        }
+                //    }
+                //}
+
+                string filePath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                string fileName = System.IO.Path.Combine(filePath, SignatureFilename);
+                ShowImageWindow window = new ShowImageWindow();
+                if (window.ShowImageFromFile(fileName))
+                {
+                    window.Show();
+                }
+            }
+            else
+            {
+                // Save to file
+                //ImageRenderer.RenderToPNGFile(SignatureCapture, SignatureFilename);
+
+                btnShow.Content = "Show";
+                btnShow.IsEnabled = File.Exists(SignatureFilename);
+            }
+        }
+
+        private async Task ProcessSignatureRequest()
         {
             SignatureCapture.Children.Clear();
 
@@ -212,48 +294,6 @@ namespace SignatureProcessorApp
                     }));
                 });
             });
-        }
-
-        private void ShowImage_Click(object sender, RoutedEventArgs e)
-        {
-            // Check for Button mode
-            if (btnShow.Content.Equals("Show"))
-            { 
-                //if (ImageRenderer.RenderToPNGFile(SignatureCapture, SignatureFilename))
-                //{
-                //    Microsoft.Win32.OpenFileDialog openFileDialong1 = new Microsoft.Win32.OpenFileDialog();
-                //    openFileDialong1.Filter = "Image files (.png)|*.png";
-                //    openFileDialong1.Title = "Open an Image File";
-                //    openFileDialong1.ShowDialog();
-
-                //    string fileName = openFileDialong1.FileName;
-
-                //    if (!string.IsNullOrEmpty(fileName))
-                //    {
-                //        ShowImageWindow window = new ShowImageWindow();
-                //        if (window.ShowImageFromFile(fileName))
-                //        { 
-                //            window.Show();
-                //        }
-                //    }
-                //}
-
-                string filePath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                string fileName = System.IO.Path.Combine(filePath, SignatureFilename);
-                ShowImageWindow window = new ShowImageWindow();
-                if (window.ShowImageFromFile(fileName))
-                {
-                    window.Show();
-                }
-            }
-            else
-            {
-                // Save to file
-                //ImageRenderer.RenderToPNGFile(SignatureCapture, SignatureFilename);
-
-                btnShow.Content = "Show";
-                btnShow.IsEnabled = File.Exists(SignatureFilename);
-            }
         }
     }
 }

@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Common\LoggerManager\LoggerManager.csproj" />
     <ProjectReference Include="..\..\common\xo\XO.csproj" />
     <ProjectReference Include="..\Devices.Common\Devices.Common.csproj" />
   </ItemGroup>
