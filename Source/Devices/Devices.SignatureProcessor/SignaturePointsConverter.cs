@@ -81,7 +81,7 @@ namespace Devices.SignatureProcessor
             int i = bytes.Length - 1;
 
             // remove non-printable characters in the stream
-            while (bytes[i] <= 0x20 || bytes[1] >= 0x7F)
+            while (bytes[i] <= 0x20 || bytes[i] >= 0x7F)
             {
                 i--;
             }

@@ -113,12 +113,19 @@ namespace Devices.Verifone.VIPA.TagLengthValue
                 }
                 else
                 {
+                    // special case for signature capture
+                    if (tag.Tag == 0xdfaa03)
+                    {
+                        tagDataLength *= 2;
+                    }
+                    
                     // special handling of POS cancellation: "ABORTED" is in the data field without a length
                     if (tagDataLength > data.Length)
                     {
                         tagDataLength = data.Length;
                         dataOffset = 0;
                     }
+
                     tag.Data = new byte[tagDataLength];
                     Array.Copy(data, dataOffset, tag.Data, 0, tagDataLength);
                 }

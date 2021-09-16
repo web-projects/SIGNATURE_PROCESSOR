@@ -1801,9 +1801,9 @@ namespace Devices.Verifone.VIPA
                     else if (tag.Tag == SignatureTemplate.HTMLValue && tag.Data.Length > 0 && collectPoints)
                     {
                         collectPoints = false;
-                        byte[] worker = ArrayPool<byte>.Shared.Rent(tag.Data.Length);
-                        Array.Copy(tag.Data, 0, worker, 0, tag.Data.Length);
-                        deviceResponse.SignatureData.Add(worker);
+                        byte[] workerBuffer = ArrayPool<byte>.Shared.Rent(tag.Data.Length);
+                        Array.Copy(tag.Data, 0, workerBuffer, 0, tag.Data.Length);
+                        deviceResponse.SignatureData.Add(workerBuffer);
                     }
                     else if (tag.Tag == SignatureTemplate.HTMLResponse)
                     {

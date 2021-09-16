@@ -240,7 +240,7 @@ namespace Devices.Verifone.Connection
                             totalDecodeSize += component.Item1;
                         }
 
-                        byte[] totalDecodeBytes = arrayPool.Rent(isChainedMessageResponse ? combinedResponseLength : totalDecodeSize);
+                        byte[] totalDecodeBytes = arrayPool.Rent(totalDecodeSize);
                         int totalDecodeOffset = 0;
 
                         foreach (Tuple<int, byte[]> component in addedComponentBytes)
@@ -252,8 +252,11 @@ namespace Devices.Verifone.Connection
 
                         if (isChainedMessageResponse)
                         {
-                            totalDecodeSize = combinedResponseLength - 3;
-                            Buffer.BlockCopy(combinedResponseBytes, 3, totalDecodeBytes, 0, totalDecodeSize);
+                            totalDecodeSize = totalDecodeOffset - 5; // skip final response header and LRC
+                            byte[] workerBuffer = arrayPool.Rent(totalDecodeSize);
+                            Buffer.BlockCopy(workerBuffer, 0, totalDecodeBytes, 0, totalDecodeSize);
+                            Array.Clear(totalDecodeBytes, 0, totalDecodeBytes.Length);
+                            Buffer.BlockCopy(workerBuffer, 3, totalDecodeBytes, 0, totalDecodeSize);
                         }
                         else
                         {

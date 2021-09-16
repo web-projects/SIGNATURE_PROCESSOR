@@ -339,7 +339,7 @@ namespace Devices.Verifone.Connection
         {
             try
             {
-                serialPort.Write(msg, 0, cmdLength);
+                serialPort?.Write(msg, 0, cmdLength);
             }
             catch (TimeoutException)
             {
