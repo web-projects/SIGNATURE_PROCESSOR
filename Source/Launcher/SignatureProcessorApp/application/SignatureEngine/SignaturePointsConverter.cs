@@ -2,6 +2,7 @@
 using SignatureProcessor.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Windows.Media;
@@ -33,11 +34,18 @@ namespace SignatureProcessor.Processor
 
         public void LoadJsonFromStream(Stream stream)
         {
-            using (StreamReader r = new StreamReader(stream))
+            try
             {
-                string json = r.ReadToEnd();
-                //byte[] deCypheredArray = ConversionHelper.HexToByteArray(json);
-                signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
+                using (StreamReader r = new StreamReader(stream))
+                {
+                    string json = r.ReadToEnd();
+                    //byte[] deCypheredArray = ConversionHelper.HexToByteArray(json);
+                    signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(json);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception loading signature points from stream: {ex.Message}");
             }
         }
 

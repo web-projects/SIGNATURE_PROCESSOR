@@ -6,7 +6,6 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO.Ports;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,6 +31,8 @@ namespace Devices.Verifone.Connection
         private bool disposedValue;
         private readonly ArrayPool<byte> arrayPool;
         private readonly object readerThreadLock = new object();
+
+        public bool IsChainedMessageResponse { get; set; }
 
         // TODO: Dependency should be injected.
         internal DeviceConfig Config { get; } = new DeviceConfig().SetSerialDeviceConfig(new Common.SerialDeviceConfig());
@@ -215,6 +216,9 @@ namespace Devices.Verifone.Connection
 
             cmdBytes[cmdIndex++] = lrc;
 
+            // chained message response
+            IsChainedMessageResponse = ((VIPACommandType)(command.cla << 8 | command.ins) == VIPACommandType.DisplayHTML) ? true : false;
+
             Debug.WriteLineIf(LogSerialBytes, $"VIPA-WRITE[{serialPort?.PortName}]: {BitConverter.ToString(cmdBytes)}");
             WriteBytes(cmdBytes, cmdLength);
 
@@ -227,20 +231,18 @@ namespace Devices.Verifone.Connection
             WriteBytes(buffer, length);
         }
 
-        [DebuggerNonUserCode]
+        //[DebuggerNonUserCode]
         private async Task ReadExistingResponseBytes()
         {
             while (!shouldStopReading)
             {
-                if (!readingSerialPort)
+                if (!readingSerialPort && !IsChainedMessageResponse)
                 {
                     await Task.Delay(100);
                     continue;
                 }
 
                 // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes)
-                //byte[] buffer = arrayPool.Rent(256);
-
                 byte[] buffer = arrayPool.Rent(1024);
 
                 bool moreData = serialPort?.IsOpen ?? false;
@@ -252,14 +254,39 @@ namespace Devices.Verifone.Connection
                         if (serialPort.BytesToRead > 0)
                         {
                             int readLength = serialPort.Read(buffer, 0, buffer.Length);
-                            
-                            Debug.WriteLineIf(LogSerialBytes, $"VIPA-READ [{serialPort.PortName}]: {BitConverter.ToString(buffer, 0, readLength)}");
-                            //Logger.debug($"{ BitConverter.ToString(buffer, 0, readLength)}");
-                            Logger.debug($"{BitConverter.ToString(buffer, 0, readLength).Replace("-", "")}");
 
-                            serialParser.BytesRead(buffer, readLength);
+                            Debug.WriteLineIf(LogSerialBytes, $"VIPA-READ [{serialPort.PortName}]: {BitConverter.ToString(buffer, 0, readLength)}");
+
+                            if (IsChainedMessageResponse)
+                            {
+                                Logger.debug($"{BitConverter.ToString(buffer, 0, readLength).Replace("-", "")}");
+
+                                // SW1-SW2-LRC in trailing edge of data frame
+                                if (buffer[readLength - 3] == 0x90 && buffer[readLength - 2] == 0x00)
+                                {
+                                    // setup chained-message-response buffer after chained-command response
+                                    if (buffer[1] == 0x00)
+                                    {
+                                        // chained answer
+                                        buffer = arrayPool.Rent(1024 * 10);
+                                        serialParser.BytesRead(buffer, readLength);
+                                    }
+                                    else
+                                    {
+                                        moreData = false;
+                                    }
+                                }
+                                else
+                                {
+                                    serialParser.BytesRead(buffer, readLength);
+                                }
+                            }
+                            else
+                            {
+                                serialParser.BytesRead(buffer, readLength);
+                            }
                         }
-                        else
+                        else if (!IsChainedMessageResponse)
                         {
                             moreData = false;
                         }

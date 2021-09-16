@@ -279,7 +279,10 @@ namespace Devices.Verifone
                     request.Actions[0].DALRequest.LinkObjects.SignatureName = linkActionRequestIPA5Object.SignatureName;
 
                     int offset = linkActionRequestIPA5Object.SignatureData.Count == 1 ? 0 : 1;
-                    byte[] prunedArray = SignaturePointsConverter.PruneByteArray(linkActionRequestIPA5Object.SignatureData[offset]);
+                    byte[] prunedArray = SignaturePointsConverter.PruneSignaturePointsByteArray(linkActionRequestIPA5Object.SignatureData[offset]);
+
+                    // remove signature separtor
+                    //prunedArray = SignaturePointsConverter.RemoveSignatureSeparatorBytes(prunedArray);
 
                     Logger.debug($"{BitConverter.ToString(prunedArray, 0, prunedArray.Length).Replace("-", "")}");
 

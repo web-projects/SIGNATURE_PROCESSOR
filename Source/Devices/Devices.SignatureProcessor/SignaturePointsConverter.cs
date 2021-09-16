@@ -7,11 +7,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace Devices.SignatureProcessor
 {
     public static class SignaturePointsConverter
     {
+        public static readonly byte[] SignatureSeparatorPattern = Encoding.ASCII.GetBytes(",{\"t\":0,\"x\":-1,\"y\":-1}");
+
         public static List<PointF[]> FormatPointsForBitmap(List<SignatureObject> signaturePoints)
         {
             int index = 0;
@@ -47,7 +51,7 @@ namespace Devices.SignatureProcessor
 
             try
             {
-                List<SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(jsonPayload);
+                List <SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(jsonPayload);
                 List<PointF[]> pointCollection = FormatPointsForBitmap(signaturePoints);
 
                 Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
@@ -67,7 +71,7 @@ namespace Devices.SignatureProcessor
             return null;
         }
 
-        public static byte[] PruneByteArray(byte[] bytes)
+        public static byte[] PruneSignaturePointsByteArray(byte[] bytes)
         {
             if (bytes.Length == 0)
             {
@@ -83,12 +87,53 @@ namespace Devices.SignatureProcessor
             }
 
             int arrayLen = i + 1;
+
+            // search for closing ']' character
+            for (; i > 0; i--)
+            {
+                if (bytes[i] == 0x5D)
+                {
+                    i++;
+                    break;
+                }
+            }
+
+            // recalcuate array size
+            arrayLen = Math.Min(arrayLen, i);
+
             byte[] copy = new byte[arrayLen];
 
             Array.Copy(bytes, copy, arrayLen);
             Array.Resize<byte>(ref copy, arrayLen);
 
             return copy;
+        }
+
+        public static byte[] RemoveSignatureSeparatorBytes(byte[] bytes)
+        {
+            List<byte> result = new List<byte>();
+            int i;
+            
+            for (i = 0; i <= bytes.Length - SignatureSeparatorPattern.Length; i++)
+            {
+                bool foundMatch = !SignatureSeparatorPattern.Where((t, j) => bytes[i + j] != t).Any();
+
+                if (foundMatch)
+                {
+                    i += SignatureSeparatorPattern.Length - 1;
+                }
+                else
+                {
+                    result.Add(bytes[i]);
+                }
+            }
+            
+            for (; i < bytes.Length; i++)
+            {
+                result.Add(bytes[i]);
+            }
+
+            return result.ToArray();
         }
     }
 }
