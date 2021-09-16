@@ -18,7 +18,7 @@ namespace SignatureProcessorApp.application.DAL
 {
     public class DeviceProcessor : IDisposable
     {
-        const int signatureCaptureTimeout = 10000;
+        const int signatureCaptureTimeout = 15000;
 
         private VerifoneDevice device;
         private List<byte[]> HTMLValueBytes;
@@ -135,7 +135,7 @@ namespace SignatureProcessorApp.application.DAL
 
             token.Register(() =>
             {
-                Debug.WriteLine("Task timed out !!! Stop");
+                Debug.WriteLine("++++++++++++++++++++++++++++++++= Task timed out !!! Stop +++++++++++++++++++++++++++++++++");
 
                 if (!operationCompleted)
                 {

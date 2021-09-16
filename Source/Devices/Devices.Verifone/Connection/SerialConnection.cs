@@ -253,13 +253,14 @@ namespace Devices.Verifone.Connection
                     {
                         if (serialPort.BytesToRead > 0)
                         {
-                            int readLength = serialPort.Read(buffer, 0, buffer.Length);
+                            bool parseBytes = true;
 
-                            Debug.WriteLineIf(LogSerialBytes, $"VIPA-READ [{serialPort.PortName}]: {BitConverter.ToString(buffer, 0, readLength)}");
+                            int readLength = serialPort.Read(buffer, 0, buffer.Length);
+                            Debug.WriteLineIf(LogSerialBytes && !IsChainedMessageResponse, $"VIPA-READ [{serialPort.PortName}]: {BitConverter.ToString(buffer, 0, readLength)}");
 
                             if (IsChainedMessageResponse)
                             {
-                                Logger.debug($"{BitConverter.ToString(buffer, 0, readLength).Replace("-", "")}");
+                                //Logger.debug($"{BitConverter.ToString(buffer, 0, readLength).Replace("-", "")}");
 
                                 // SW1-SW2-LRC in trailing edge of data frame
                                 if (buffer[readLength - 3] == 0x90 && buffer[readLength - 2] == 0x00)
@@ -267,21 +268,24 @@ namespace Devices.Verifone.Connection
                                     // setup chained-message-response buffer after chained-command response
                                     if (buffer[1] == 0x00)
                                     {
-                                        // chained answer
-                                        buffer = arrayPool.Rent(1024 * 10);
+                                        // chained command answer: expect SW1SW2=0x9000
                                         serialParser.BytesRead(buffer, readLength);
+                                        serialParser.ReadAndExecute(ResponseTagsHandler, ResponseTaglessHandler, ResponseContactlessHandler);
+                                        serialParser.SanityCheck();
+                                        parseBytes = false;
+                                        // grow the buffer as signature payload is large
+                                        arrayPool.Return(buffer);
+                                        buffer = arrayPool.Rent(1024 * 10);
                                     }
                                     else
                                     {
                                         moreData = false;
                                     }
                                 }
-                                else
-                                {
-                                    serialParser.BytesRead(buffer, readLength);
-                                }
                             }
-                            else
+
+                            // assemble combined bytes for chained answer response
+                            if (parseBytes)
                             {
                                 serialParser.BytesRead(buffer, readLength);
                             }
@@ -323,7 +327,7 @@ namespace Devices.Verifone.Connection
 
                 if (!cancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    serialParser.ReadAndExecute(ResponseTagsHandler, ResponseTaglessHandler, ResponseContactlessHandler);
+                    serialParser.ReadAndExecute(ResponseTagsHandler, ResponseTaglessHandler, ResponseContactlessHandler, IsChainedMessageResponse);
                     serialParser.SanityCheck();
                 }
             }
