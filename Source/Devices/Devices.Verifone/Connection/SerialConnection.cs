@@ -22,6 +22,10 @@ namespace Devices.Verifone.Connection
         internal VIPAImpl.ResponseTaglessHandlerDelegate ResponseTaglessHandler = null;
         internal VIPAImpl.ResponseCLessHandlerDelegate ResponseContactlessHandler = null;
 
+        // optimize serial port read buffer size based on expected response
+        private const int unchainedResponseMessageSize = 1024;
+        private const int chainedResponseMessageSize = unchainedResponseMessageSize * 10;
+
         private CancellationTokenSource cancellationTokenSource;
         private SerialPort serialPort;
         private readonly IVIPASerialParser serialParser;
@@ -242,8 +246,7 @@ namespace Devices.Verifone.Connection
                     continue;
                 }
 
-                // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes)
-                byte[] buffer = arrayPool.Rent(1024);
+                byte[] buffer = arrayPool.Rent(unchainedResponseMessageSize);  //Read the whole thing if possible.
 
                 bool moreData = serialPort?.IsOpen ?? false;
 
@@ -275,7 +278,7 @@ namespace Devices.Verifone.Connection
                                         parseBytes = false;
                                         // grow the buffer as signature payload is large
                                         arrayPool.Return(buffer);
-                                        buffer = arrayPool.Rent(1024 * 10);
+                                        buffer = arrayPool.Rent(chainedResponseMessageSize);
                                     }
                                     else
                                     {

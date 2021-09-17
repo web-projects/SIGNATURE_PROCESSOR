@@ -1,6 +1,7 @@
 ﻿using Common.LoggerManager;
 using Devices.Common.Helpers;
 using Devices.Common.SignatureProcessor;
+using Microsoft.IO;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace Devices.SignatureProcessor
 {
     public static class SignaturePointsConverter
     {
+        private static readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
         public static readonly byte[] SignatureSeparatorPattern = Encoding.ASCII.GetBytes(",{\"t\":0,\"x\":-1,\"y\":-1}");
 
         public static List<PointF[]> FormatPointsForBitmap(List<SignatureObject> signaturePoints)
@@ -51,16 +53,15 @@ namespace Devices.SignatureProcessor
 
             try
             {
-                List <SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(jsonPayload);
+                List<SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(jsonPayload);
                 List<PointF[]> pointCollection = FormatPointsForBitmap(signaturePoints);
 
-                Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
+                using Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);
+                using MemoryStream memoryStream = recyclableMemoryStreamManager.GetStream();
 
-                using (var stream = new MemoryStream())
-                {
-                    signatureBmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                    return stream.ToArray();
-                }
+                signatureBmp.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+
+                return memoryStream.ToArray();
             }
             catch (Exception ex)
             {
@@ -113,7 +114,7 @@ namespace Devices.SignatureProcessor
         {
             List<byte> result = new List<byte>();
             int i;
-            
+
             for (i = 0; i <= bytes.Length - SignatureSeparatorPattern.Length; i++)
             {
                 bool foundMatch = !SignatureSeparatorPattern.Where((t, j) => bytes[i + j] != t).Any();
@@ -127,7 +128,7 @@ namespace Devices.SignatureProcessor
                     result.Add(bytes[i]);
                 }
             }
-            
+
             for (; i < bytes.Length; i++)
             {
                 result.Add(bytes[i]);

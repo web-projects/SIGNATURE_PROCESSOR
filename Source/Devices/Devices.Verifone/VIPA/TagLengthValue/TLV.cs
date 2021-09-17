@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Devices.Common.Helpers.Templates;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -114,7 +115,7 @@ namespace Devices.Verifone.VIPA.TagLengthValue
                 else
                 {
                     // special case for signature capture
-                    if (tag.Tag == 0xdfaa03 && tagDataLength > 0)
+                    if (tag.Tag == SignatureTemplate.HTMLValue && tagDataLength > 0)
                     {
                         tagDataLength = data.Length - dataOffset;
                     }
