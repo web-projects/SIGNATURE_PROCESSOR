@@ -115,17 +115,45 @@ namespace Devices.Common.Helpers
             return result.ToString();
         }
 
-        public static byte[] SignatureNormalize(byte[] data, byte item)
+        public static byte[] RemoveBytes(byte[] input, byte[] pattern)
         {
-            for (int i = 0; i < data.Length; i++)
+            if (pattern.Length == 0)
             {
-                if (data[i] == 0x00)
+                return input;
+            }
+
+            List<byte> result = new List<byte>();
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                bool patternLeft = i <= input.Length - pattern.Length;
+                if (patternLeft && (!pattern.Where((t, j) => input[i + j] != t).Any()))
                 {
-                    data[i] = item;
+                    i += pattern.Length - 1;
+                }
+                else
+                {
+                    result.Add(input[i]);
+                }
+            }
+            return result.ToArray();
+        }
+
+        public static byte[] RemoveNonASCIIBytes(byte[] input)
+        {
+            int index = 0;
+            byte[] output = new byte[input.Length];
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (input[i] >= 0x20 && input[i] <= 0x7F)
+                {
+                    output[index++] = input[i];
                 }
             }
 
-            return data;
+            Array.Resize(ref output, index);
+            return output;
         }
     }
 }
