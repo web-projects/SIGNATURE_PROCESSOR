@@ -1,11 +1,8 @@
 using Devices.Common;
 using Devices.Common.SignatureProcessor;
-using Devices.SignatureProcessor;
 using Devices.Verifone.Tests.Helpers;
-using Devices.Verifone.VIPA;
 using Devices.Verifone.VIPA.Interfaces;
 using SignatureProcessorApp.devices.common;
-using SignatureProcessorApp.devices.Verifone.Helpers;
 using System;
 using System.IO;
 using System.Linq;

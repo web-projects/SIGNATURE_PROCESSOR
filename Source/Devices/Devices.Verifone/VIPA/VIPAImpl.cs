@@ -43,7 +43,6 @@ namespace Devices.Verifone.VIPA
         }
         #endregion --- enumerations ---
 
-        #region --- attributes ---
         private enum ResetDeviceCfg
         {
             ReturnSerialNumber = 1 << 0,
@@ -55,6 +54,8 @@ namespace Devices.Verifone.VIPA
             ReturnPinpadConfiguration = 1 << 6,
             AddVOSComponentsInformation = 1 << 7
         }
+
+        #region --- attributes ---
 
         // Optimal Packet Size for READ/WRITE operations on device
         const int PACKET_SIZE = 1024;
@@ -210,7 +211,7 @@ namespace Devices.Verifone.VIPA
             // Display [D2, 01]
             SendVipaCommand(VIPACommandType.Display, (byte)displayMessageValue, (byte)(enableBacklight ? 0x01 : 0x00), Encoding.ASCII.GetBytes(customMessage));
 
-            var displayCommandResponseCode = ResponseCodeResult.Task.Result;
+            int displayCommandResponseCode = ResponseCodeResult.Task.Result;
 
             ResponseTagsHandler -= ResponseCodeHandler;
             ResponseTagsHandlerSubscribed--;
@@ -799,7 +800,7 @@ namespace Devices.Verifone.VIPA
             }
             else
             {
-                Console.WriteLine(string.Format("DEVICE: HMAC GENERATIN FAILED WITH ERROR=0x{0:X}", securityConfig.VipaResponse));
+                Console.WriteLine(string.Format("DEVICE: HMAC GENERATION FAILED WITH ERROR=0x{0:X}", securityConfig.VipaResponse));
             }
 
             return (securityConfig.securityConfigurationObject?.GeneratedHMAC, securityConfig.VipaResponse);
@@ -1499,7 +1500,6 @@ namespace Devices.Verifone.VIPA
         }
 
         public void GetSecurityInformationResponseHandler(List<TLV> tags, int responseCode, bool cancelled = false)
-
         {
             if (cancelled || tags == null)
             {

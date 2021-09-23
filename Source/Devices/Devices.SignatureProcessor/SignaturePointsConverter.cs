@@ -10,6 +10,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Devices.SignatureProcessor
 {
@@ -48,8 +49,11 @@ namespace Devices.SignatureProcessor
             string json = ConversionHelper.ByteArrayCodedHextoString(signaturePointsInBytes);
             Logger.debug($"{json}");
 
-            // look for closing bracket
-            string jsonPayload = json.Substring(0, json.LastIndexOf(']') + 1);
+            // remove non-printable characters
+            string jsonPayload = Regex.Replace(json, @"\p{C}+", string.Empty);
+
+            // look for first closing bracket
+            jsonPayload = jsonPayload.Substring(0, jsonPayload.IndexOf(']') + 1);
 
             try
             {

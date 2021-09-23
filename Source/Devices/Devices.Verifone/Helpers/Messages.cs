@@ -29,6 +29,8 @@ namespace Devices.Verifone.Helpers
             DeviceExtendedReset,
             [StringValue("VIPA: ABORT COMMAND")]
             AbortCommand,
+            [StringValue("VIPA: RESTART")]
+            VIPARestart, 
             [StringValue("VIPA: REBOOT DEVICE")]
             RebootDevice,
             [StringValue("VIPA: GET CARD STATUS")]

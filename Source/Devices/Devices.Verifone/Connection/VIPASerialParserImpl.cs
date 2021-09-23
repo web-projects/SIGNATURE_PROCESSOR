@@ -1,5 +1,4 @@
-﻿using Common.LoggerManager;
-using Devices.Common;
+﻿using Devices.Common;
 using Devices.Verifone.Connection.Interfaces;
 using Devices.Verifone.VIPA;
 using Devices.Verifone.VIPA.TagLengthValue;
@@ -136,16 +135,14 @@ namespace Devices.Verifone.Connection
                 }
             }
 
-            // FIX: CHAINED RESPONSE PROCESSING
             int maxPacketLen = isChainedCommand ? combinedResponseBytes.Length - 1 : combinedResponseBytes[2] + 3;
 
-            // Validate LRC
             if (!isChainedMessageResponse)
             {
+                // Validate LRC
                 byte lrc = CalculateLRCFromByteArray(combinedResponseBytes);
 
                 // offset from length to LRC is 3
-                // FIX: CHAINED RESPONSE PROCESSING
                 if (!isChainedCommand && combinedResponseBytes[maxPacketLen] != lrc)
                 {
                     readErrorLevel = ReadErrorLevel.Missing_LRC;
@@ -153,8 +150,7 @@ namespace Devices.Verifone.Connection
                 }
             }
 
-            // FIX: CHAINED RESPONSE PROCESSING
-            if (isChainedCommand || isChainedMessageResponse)  // Command is chained (VIPA section 2.4)
+            if (isChainedMessageResponse || isChainedCommand)  // Command is chained (VIPA section 2.4)
             {
                 // reassemble chained message response
                 if (isChainedMessageResponse && ProcessChainedMessageResponse())
@@ -164,13 +160,13 @@ namespace Devices.Verifone.Connection
                 else
                 {
                     int componentBytesLength = (int)combinedResponseBytes[2];
-                    consumedResponseBytesLength = componentBytesLength + headerProtoLen;
                     byte[] componentBytes = arrayPool.Rent(componentBytesLength);
 
                     // copy component bytes
                     Buffer.BlockCopy(combinedResponseBytes, 3, componentBytes, 0, componentBytesLength);
 
                     addedComponentBytes.Add(new Tuple<int, byte[]>(componentBytesLength, componentBytes));
+                    consumedResponseBytesLength = componentBytesLength + headerProtoLen;
 
                     Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-RRCBADD [{comPort}]: {BitConverter.ToString(componentBytes, 0, componentBytesLength)}");
                 }
@@ -207,11 +203,14 @@ namespace Devices.Verifone.Connection
 
             lock (combinedResponseBytesLock)
             {
-                Debug.WriteLineIf(SerialConnection.LogSerialBytes && isChainedMessageResponse, $"VIPA-PARSE[{combinedResponseLength}]: " + BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength));
-                if (isChainedMessageResponse)
+                if (combinedResponseLength > 0)
                 {
-                    Logger.debug($"{BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength).Replace("-", "")}");
+                    Debug.WriteLineIf((SerialConnection.LogSerialBytes && isChainedMessageResponse), $"VIPA-PARSE[{combinedResponseLength}]: " + BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength));
                 }
+                //if (isChainedMessageResponse)
+                //{
+                //    Logger.debug($"{BitConverter.ToString(combinedResponseBytes, 0, combinedResponseLength).Replace("-", "")}");
+                //}
 
                 while (addedResponseComponent && combinedResponseLength > 0 && combinedResponseBytes != null)
                 {
@@ -392,58 +391,74 @@ namespace Devices.Verifone.Connection
 
         private bool ProcessChainedMessageResponse()
         {
-            // obtain proper length from payload
-            int messageLength = CalculateByteArrayLength(combinedResponseBytes, combinedResponseLength - 1);
-
-            byte[] componentBytes = arrayPool.Rent(messageLength);
-            ArrayPool<byte> workerPool = ArrayPool<byte>.Create();
-
-            int offset = 0;
-            int frame = 1;
-
-            // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes) + headerProtoLen
-            for (int i = 0; i < messageLength; i += maxPacketProtoLen)
+            try
             {
-                byte[] workerBuffer = workerPool.Rent(maxPacketProtoLen);
-                Buffer.BlockCopy(combinedResponseBytes, i, workerBuffer, 0, maxPacketProtoLen);
+                // obtain proper length from payload
+                int messageLength = CalculateByteArrayLength(combinedResponseBytes, combinedResponseLength - 1);
 
-                int workerBufferLen = CalculateByteArrayLength(workerBuffer, maxPacketProtoLen - 1);
-                byte lrc = CalculateLRCFromByteArray(workerBuffer, (workerBuffer[1] == 0x00 ? workerBufferLen : 0));
+                byte[] componentBytes = arrayPool.Rent(messageLength);
+                ArrayPool<byte> workerPool = ArrayPool<byte>.Create();
 
-                if (workerBuffer[workerBufferLen] != lrc)
+                int offset = 0;
+                int frame = 1;
+
+                // VIPA Specification: the maximum possible LEN byte value is 0xFE (254 bytes) + headerProtoLen
+                for (int i = 0; i < messageLength; i += maxPacketProtoLen)
                 {
+                    // copy MAX of 258 block sizes (NAD+PCB+LEN+LRC+FE_BYTES_DATA_MAX) or LESS depending on last packet with PCB = 0
+                    int blockCopyLength = CalculateByteArrayLength(combinedResponseBytes, i + maxPacketProtoLen - 1) - i + 1;
+                    byte[] workerBuffer = workerPool.Rent(blockCopyLength);
+                    Buffer.BlockCopy(combinedResponseBytes, i, workerBuffer, 0, blockCopyLength);
+
+                    // assume the buffer length is correct
+                    int workerBufferLen = workerBuffer[2] + headerProtoLen;
+
+                    // last message in chained response PCB bit is set to 0: total length = LEN + SW1 + SW2 + LRC
+                    byte lrc = CalculateLRCFromByteArray(workerBuffer, (workerBuffer[1] == 0x00 ? workerBuffer[2] + 0x03 : 0));
+                    workerBufferLen = (workerBuffer[1] == 0x00) ? workerBuffer[2] + 0x03 : workerBufferLen - 1;
+
+                    if (workerBuffer[workerBufferLen] != lrc)
+                    {
+                        Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-RRCBADD [{comPort}]|FRAME#{frame++}: {BitConverter.ToString(workerBuffer, 0, workerBufferLen)}");
+                        workerPool.Return(workerBuffer);
+                        readErrorLevel = ReadErrorLevel.Missing_LRC;
+                        return true;
+                    }
+
+                    // remove LRC
+                    workerBufferLen -= i > 0 ? 3 : 0;
+                    Buffer.BlockCopy(workerBuffer, ((i > 0) ? 3 : 0), componentBytes, offset, workerBufferLen);
+                    offset += workerBufferLen;
+
+                    Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-RRCBADD [{comPort}]|FRAME#{frame++}: {BitConverter.ToString(workerBuffer, 0, workerBufferLen)}");
+
                     workerPool.Return(workerBuffer);
-                    readErrorLevel = ReadErrorLevel.Missing_LRC;
-                    return true;
                 }
 
-                // remove LRC
-                workerBufferLen -= i > 0 ? 3 : 0;
-                Buffer.BlockCopy(workerBuffer, ((i > 0) ? 3 : 0), componentBytes, offset, workerBufferLen);
-                offset += workerBufferLen;
-
-                Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-RRCBADD [{comPort}]|FRAME#{frame++}: {BitConverter.ToString(workerBuffer, 0, workerBufferLen)}");
-
-                workerPool.Return(workerBuffer);
+                int componentBytesLength = offset;
+                addedComponentBytes.Add(new Tuple<int, byte[]>(componentBytesLength, componentBytes));
             }
-
-            int componentBytesLength = offset;
-            addedComponentBytes.Add(new Tuple<int, byte[]>(componentBytesLength, componentBytes));
+            catch (Exception ex)
+            {
+                //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Error, $"Error processing chained-message response({ex.Message})");
+                Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"Error processing chained-message response({ex.Message})");
+            }
 
             return false;
         }
 
         private int CalculateByteArrayLength(byte[] array, int startPosition)
         {
-            int length = startPosition;
-            for (; length > 0;)
+            // array length returns the size of the array instead of the length of its contents
+            int length;
+
+            // check for possible buffer overrun on last copied block
+            for (length = Math.Min(startPosition, array.Length - 1); length > 0; length--)
             {
                 if (array[length] != 0x00)
                 {
                     break;
                 }
-
-                length--;
             }
             return length;
         }

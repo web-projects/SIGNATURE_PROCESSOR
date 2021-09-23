@@ -235,7 +235,7 @@ namespace Devices.Verifone.Connection
             WriteBytes(buffer, length);
         }
 
-        //[DebuggerNonUserCode]
+        [DebuggerNonUserCode]
         private async Task ReadExistingResponseBytes()
         {
             while (!shouldStopReading)
