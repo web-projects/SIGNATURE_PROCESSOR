@@ -1,4 +1,5 @@
 ﻿using Devices.Common;
+using Devices.Common.Helpers;
 using Devices.Verifone.Connection.Interfaces;
 using Devices.Verifone.VIPA;
 using Devices.Verifone.VIPA.TagLengthValue;
@@ -7,6 +8,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Devices.Verifone.Connection
 {
@@ -153,9 +155,12 @@ namespace Devices.Verifone.Connection
             if (isChainedMessageResponse || isChainedCommand)  // Command is chained (VIPA section 2.4)
             {
                 // reassemble chained message response
-                if (isChainedMessageResponse && ProcessChainedMessageResponse())
+                if (isChainedMessageResponse)
                 {
-                    return true;
+                    if (ProcessChainedMessageResponse())
+                    {
+                        return true;
+                    }
                 }
                 else
                 {
@@ -169,6 +174,9 @@ namespace Devices.Verifone.Connection
                     consumedResponseBytesLength = componentBytesLength + headerProtoLen;
 
                     Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-RRCBADD [{comPort}]: {BitConverter.ToString(componentBytes, 0, componentBytesLength)}");
+
+                    string resultString = Regex.Replace(ConversionHelper.ByteArrayCodedHextoString(componentBytes), @"[^\u0020-\u007E]", ".", RegexOptions.Compiled);
+                    Debug.WriteLine($"CFRE:\r\n'{resultString}'");
                 }
 
                 // 1st packet      : NAD PCB(bit 0 set) LEN CLA INS P1 P2 Lc Data… LRC
@@ -234,22 +242,24 @@ namespace Devices.Verifone.Connection
                         Array.Clear(totalDecodeBytes, 0, totalDecodeBytes.Length);
 
                         int totalDecodeOffset = 0;
+                        int frame = 1;
 
+                        // assemble totalDecodeBytes with component payload
                         foreach (Tuple<int, byte[]> component in addedComponentBytes)
                         {
+                            Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"VIPA-RRCBADD [{comPort}]|FRAME#{frame++}: {BitConverter.ToString(component.Item2, 0, component.Item1)}");
+
                             Buffer.BlockCopy(component.Item2, 0, totalDecodeBytes, totalDecodeOffset, component.Item1);
                             totalDecodeOffset += component.Item1;
                             arrayPool.Return(component.Item2);
                         }
 
+                        string resultString = Regex.Replace(ConversionHelper.ByteArrayCodedHextoString(totalDecodeBytes), @"[^\u0020-\u007E]", ".", RegexOptions.Compiled);
+                        Debug.WriteLine($"RAE-1:\r\n'{resultString.Replace(".", string.Empty)}'");
+
                         if (isChainedMessageResponse)
                         {
-                            totalDecodeSize = totalDecodeOffset - 5; // skip final response header and LRC
-                            byte[] workerBuffer = arrayPool.Rent(totalDecodeSize);
-                            Buffer.BlockCopy(workerBuffer, 0, totalDecodeBytes, 0, totalDecodeSize);
-                            totalDecodeSize = workerBuffer.Length;
-                            Array.Clear(totalDecodeBytes, 0, totalDecodeBytes.Length);
-                            Buffer.BlockCopy(workerBuffer, 0, totalDecodeBytes, 0, totalDecodeSize);
+                            totalDecodeSize = totalDecodeOffset - 2; // skip final response header
                             totalDecodeSize = CalculateByteArrayLength(totalDecodeBytes, totalDecodeSize - 1);
                             consumedResponseBytesLength = combinedResponseLength = totalDecodeSize;
                         }
@@ -389,15 +399,27 @@ namespace Devices.Verifone.Connection
             }
         }
 
+        private void PoolReturnIfNotNull(ArrayPool<byte> pool, byte[] buffer)
+        {
+            if (buffer != null)
+            {
+                pool.Return(buffer);
+            }
+        }
+
         private bool ProcessChainedMessageResponse()
         {
+            ArrayPool<byte> workerPool = ArrayPool<byte>.Create();
+
+            byte[] workerBuffer = null;
+            byte[] componentBytes = null;
+
             try
             {
                 // obtain proper length from payload
                 int messageLength = CalculateByteArrayLength(combinedResponseBytes, combinedResponseLength - 1);
 
-                byte[] componentBytes = arrayPool.Rent(messageLength);
-                ArrayPool<byte> workerPool = ArrayPool<byte>.Create();
+                componentBytes = arrayPool.Rent(messageLength);
 
                 int offset = 0;
                 int frame = 1;
@@ -407,7 +429,7 @@ namespace Devices.Verifone.Connection
                 {
                     // copy MAX of 258 block sizes (NAD+PCB+LEN+LRC+FE_BYTES_DATA_MAX) or LESS depending on last packet with PCB = 0
                     int blockCopyLength = CalculateByteArrayLength(combinedResponseBytes, i + maxPacketProtoLen - 1) - i + 1;
-                    byte[] workerBuffer = workerPool.Rent(blockCopyLength);
+                    workerBuffer = workerPool.Rent(blockCopyLength);
                     Buffer.BlockCopy(combinedResponseBytes, i, workerBuffer, 0, blockCopyLength);
 
                     // assume the buffer length is correct
@@ -442,6 +464,8 @@ namespace Devices.Verifone.Connection
             {
                 //deviceLogHandler?.Invoke(XO.ProtoBuf.LogMessage.Types.LogLevel.Error, $"Error processing chained-message response({ex.Message})");
                 Debug.WriteLineIf(SerialConnection.LogSerialBytes, $"Error processing chained-message response({ex.Message})");
+                PoolReturnIfNotNull(workerPool, workerBuffer);
+                PoolReturnIfNotNull(arrayPool, componentBytes);
             }
 
             return false;

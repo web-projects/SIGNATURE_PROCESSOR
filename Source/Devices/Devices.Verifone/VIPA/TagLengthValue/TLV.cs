@@ -81,6 +81,15 @@ namespace Devices.Verifone.VIPA.TagLengthValue
                 byte lengthByte0 = data[dataOffset];
                 int tagDataLength = 0;
 
+                //  VIPA SPECIFICATION - C.2. Coding of the Length Field
+                //  The coding of the length field is as follows:
+                //  When bit b8 of the most significant byte of the length field is set to 0, the length field consists of
+                //  only one byte.Bits b7 to b1 code the number of bytes of the value field.
+                //  The length field is within the range 1 to 127.
+                //  When bit b8 of the most significant byte of the length field is set to 1, the subsequent bits b7 to
+                //  b1 of the most significant byte code the number of subsequent bytes in the length field.
+                //  The subsequent bytes code an integer representing the number of bytes in the value field.Two
+                //  bytes are necessary to express up to 255 bytes in the value field.
                 if ((lengthByte0 & 0x80) == 0x80)
                 {
                     // Long form length
@@ -114,11 +123,20 @@ namespace Devices.Verifone.VIPA.TagLengthValue
                 }
                 else
                 {
-                    // special case for signature capture
-                    if (tag.Tag == SignatureTemplate.HTMLValue && tagDataLength > 0)
-                    {
-                        tagDataLength = data.Length - dataOffset;
-                    }
+                    // C.2. Coding of the Length Field
+                    //  The coding of the length field is as follows:
+                    //  When bit b8 of the most significant byte of the length field is set to 0, the length field consists of
+                    //  only one byte.Bits b7 to b1 code the number of bytes of the value field.
+                    //  The length field is within the range 1 to 127.
+                    //  When bit b8 of the most significant byte of the length field is set to 1, the subsequent bits b7 to
+                    //  b1 of the most significant byte code the number of subsequent bytes in the length field.
+                    //  The subsequent bytes code an integer representing the number of bytes in the value field.Two
+                    //  bytes are necessary to express up to 255 bytes in the value field.
+
+                    //if (tag.Tag == SignatureTemplate.HTMLValue && (tagDataLength | 0x8F))
+                    //{
+                    //    tagDataLength = data.Length - dataOffset;
+                    //}
                     
                     // special handling of POS cancellation: "ABORTED" is in the data field without a length
                     if (tagDataLength > data.Length)

@@ -58,6 +58,8 @@ namespace Devices.SignatureProcessor
             try
             {
                 List<SignatureObject> signaturePoints = JsonConvert.DeserializeObject<List<SignatureObject>>(jsonPayload);
+                Debug.WriteLine($"SIGNATURE POINTS:\r\n{jsonPayload}");
+
                 List<PointF[]> pointCollection = FormatPointsForBitmap(signaturePoints);
 
                 using Bitmap signatureBmp = ImageRenderer.CreateBitmapFromPoints(pointCollection);

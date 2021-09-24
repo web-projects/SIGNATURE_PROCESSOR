@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using static System.ExtensionMethods;
+﻿using static System.ExtensionMethods;
 
 namespace Devices.Verifone.VIPA
 {
@@ -23,6 +20,8 @@ namespace Devices.Verifone.VIPA
         public byte[] data { get; set; }
         public bool includeLE { get; set; }
         public byte le { get; set; }
+
+        public static readonly string ChainedResponseAnswerData = "mapp/signature.html";
     }
 
     public enum VIPACommandType

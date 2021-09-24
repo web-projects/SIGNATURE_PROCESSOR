@@ -1789,9 +1789,11 @@ namespace Devices.Verifone.VIPA
             {
                 foreach (TLV tag in tags)
                 {
+                    Debug.WriteLine(string.Format("SIG TAG: 0x{0:X6} - LEN={1}", tag.Tag, tag.Data.Length));
                     if (tag.Tag == SignatureTemplate.HTMLKey)
                     {
                         string signatureName = Encoding.UTF8.GetString(tag.Data).Replace("-", "");
+                        Debug.WriteLine($"SIG NAM: '{signatureName}'");
                         if (signatureName.Equals("signatureTwo", StringComparison.OrdinalIgnoreCase))
                         {
                             deviceResponse.SignatureName = Encoding.UTF8.GetString(tag.Data).Replace("-", "");

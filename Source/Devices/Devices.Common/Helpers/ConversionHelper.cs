@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Devices.Common.Helpers
 {
@@ -154,6 +156,69 @@ namespace Devices.Common.Helpers
 
             Array.Resize(ref output, index);
             return output;
+        }
+
+        public static string EncodeNonAsciiCharacters(string value)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in value)
+            {
+                if (c > 127)
+                {
+                    // This character is too big for ASCII
+                    string encodedValue = "\\u" + ((int)c).ToString("x4");
+                    sb.Append(encodedValue);
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        public static string DecodeEncodedNonAsciiCharacters(string value)
+        {
+            return Regex.Replace(
+                value,
+                @"\\u(?<Value>[a-zA-Z0-9]{4})",
+                m =>
+                {
+                    return ((char)int.Parse(m.Groups["Value"].Value, NumberStyles.HexNumber)).ToString();
+                });
+        }
+
+        public static string UnicodeToASCIIConversion(string value)
+        {
+            // Convert the string into a byte[].
+            byte[] unicodeBytes = Encoding.Unicode.GetBytes(value);
+
+            // Perform the conversion from one encoding to the other.
+            byte[] asciiBytes = Encoding.Convert(Encoding.Unicode, Encoding.ASCII, unicodeBytes);
+
+            // Convert the new byte[] into a char[] and then into a string.
+            // This is a slightly different approach to converting to illustrate
+            // the use of GetCharCount/GetChars.
+            char[] asciiChars = new char[Encoding.ASCII.GetCharCount(asciiBytes, 0, asciiBytes.Length)];
+            Encoding.ASCII.GetChars(asciiBytes, 0, asciiBytes.Length, asciiChars, 0);
+            string asciiString = new string(asciiChars);
+
+            return asciiString;
+        }
+        
+        public static string UnicodeToUTF8Conversion(string value)
+        {
+            // Convert the string into a byte[].
+            byte[] unicodeBytes = Encoding.Unicode.GetBytes(value);
+
+            // Perform the conversion from one encoding to the other.
+            byte[] utf8Bytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, unicodeBytes);
+
+            char[] utf8Chars = new char[Encoding.UTF8.GetCharCount(utf8Bytes, 0, utf8Bytes.Length)];
+            Encoding.UTF8.GetChars(utf8Bytes, 0, utf8Bytes.Length, utf8Chars, 0);
+            string utf8String = new string(utf8Chars);
+
+            return utf8String;
         }
     }
 }
